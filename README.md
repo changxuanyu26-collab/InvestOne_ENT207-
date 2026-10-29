@@ -8,7 +8,7 @@ An educational investment research workspace that combines market evidence, simu
 
 **ENT207 · Red Bean & Coix · Mac Apple Silicon / Browser Demo**
 
-[Explore the interactive demo](https://changxuanyu26-collab.github.io/InvestOne_ENT207-/) · [Demo source](docs/index.html) · [Architecture](ARCHITECTURE.md) · [Safety & data notes](SECURITY.md)
+[▶ **PLAY DEMO — ONE CLICK**](https://changxuanyu26-collab.github.io/InvestOne_ENT207-/?autoplay=1) · [Explore interactively](https://changxuanyu26-collab.github.io/InvestOne_ENT207-/) · [Demo source](docs/index.html) · [Architecture](ARCHITECTURE.md) · [Safety & data notes](SECURITY.md)
 
 </div>
 
@@ -30,7 +30,7 @@ An educational investment research workspace that combines market evidence, simu
 
 ## Demo
 
-The public demo in `docs/index.html` is a static, dependency-free website intended for GitHub Pages. It demonstrates page navigation, watchlist interaction, a paper trading example, interactive research, rule creation, a quant illustration, and a scripted AI walkthrough. All presented market data is **synthetic** and clearly labeled.
+The large **▶ Play Demo** button on the demo landing page starts a nine-scene auto-guided tour with Pause, Back, Next and Replay. Append `?autoplay=1` to start playback automatically. The public demo in `docs/index.html` is a static, dependency-free website intended for GitHub Pages. It demonstrates page navigation, watchlist interaction, a paper trading example, interactive research, rule creation, a quant illustration, and a scripted AI walkthrough. All presented market data is **synthetic** and clearly labeled.
 
 The demo never requests or stores API keys. The desktop product must never be represented as providing reliable real-time market data without external provider verification.
 
@@ -40,7 +40,7 @@ Repository owner: **Settings → Pages → Build and deployment → Deploy from 
 
 https://changxuanyu26-collab.github.io/InvestOne_ENT207-/
 
-The link may return 404 until GitHub Pages is enabled.
+**Important:** GitHub Pages must be enabled in repository settings for the Play Demo URL to work. The link may return 404 until GitHub Pages is enabled.
 
 ## Desktop application
 
