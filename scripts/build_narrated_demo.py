@@ -21,11 +21,18 @@ async def main():
   async with async_playwright() as p:
    browser=await p.chromium.launch(headless=True,args=["--no-sandbox"])
    page=await browser.new_page(viewport={"width":1360,"height":765},device_scale_factor=1)
-   await page.goto((ROOT/"docs/index.html").as_uri())
+   html=(ROOT/"docs/index.html").read_text(encoding="utf-8")
+   css=(ROOT/"docs/site.css").read_text(encoding="utf-8")
+   js=(ROOT/"docs/site.js").read_text(encoding="utf-8")
+   html=html.replace('<link rel="stylesheet" href="site.css">',"<style>"+css+"</style>")
+   html=html.replace('<script src="site.js"></script>',"<script>"+js+"</script>")
+   await page.set_content(html,wait_until="load")
+   await page.locator('[data-go="overview"]').first.wait_for(timeout=15000)
    await page.add_style_tag(content=".video-caption{position:fixed;left:260px;right:20px;bottom:12px;padding:13px 18px;border-radius:9px;z-index:200;background:#192434ee;color:#fff;font-family:Arial;min-height:77px}.video-caption b{font-size:17px}.video-caption span{font-size:13px;color:#d4e1ef}")
    await page.evaluate("()=>{let el=document.createElement('div');el.className='video-caption';el.id='video-caption';document.body.appendChild(el)}")
    for i,(tab,title,speech) in enumerate(SCENES):
-    if i:await page.locator('[data-go="'+tab+'"]').first.click()
+    if i:
+     await page.locator('[data-go="'+tab+'"]').first.click(timeout=20000)
     if tab=="portfolio":
      await page.locator('#trade-form input[name="quantity"]').fill("3")
      await page.locator('#trade-form button[type="submit"]').click()
