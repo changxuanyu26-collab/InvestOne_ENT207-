@@ -2,7 +2,10 @@ name: Deploy Interactive Demo
 on:
   push:
     branches: [main]
-    paths: ['docs/**', '.github/workflows/pages.yml']
+    paths:
+      - 'docs/**'
+      - 'scripts/create_demo_video.py'
+      - '.github/workflows/pages.yml'
   workflow_dispatch:
 permissions:
   contents: read
@@ -19,6 +22,19 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install recording prerequisites
+        run: |
+          python -m pip install playwright==1.56.0
+          python -m playwright install --with-deps chromium
+      - name: Render walkthrough MP4 from demo page
+        run: python scripts/create_demo_video.py
+      - name: Validate generated video
+        run: |
+          test -s docs/demo.mp4
+          ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1 docs/demo.mp4
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
