@@ -4,7 +4,7 @@
 
 **AI-Powered Personal Investment Intelligence**
 
-An educational investment research workspace that combines market evidence, simulated portfolios, quantitative backtesting, monitoring, a local research library, and AI-assisted analysis.
+A professional light-theme investment intelligence workspace that combines market evidence, simulated portfolios, quantitative backtesting, monitoring, a local research library, and AI-assisted analysis.
 
 **ENT207 · Red Bean & Coix · Mac Apple Silicon / Browser Demo**
 
@@ -30,7 +30,7 @@ An educational investment research workspace that combines market evidence, simu
 
 ## Demo
 
-The large **▶ Play Demo** button on the demo landing page starts a nine-scene auto-guided tour with Pause, Back, Next and Replay. Append `?autoplay=1` to start playback automatically. The public demo in `docs/index.html` is a static, dependency-free website intended for GitHub Pages. It demonstrates page navigation, watchlist interaction, a paper trading example, interactive research, rule creation, a quant illustration, and a scripted AI walkthrough. All presented market data is **synthetic** and clearly labeled.
+The prominent **▶ Play Demo** button opens a true 63-second narrated MP4 player with native playback, volume and seekable progress controls. The video uses a light financial-terminal design inspired by information hierarchy in leading investment apps. Append `?autoplay=1` to open the video player automatically; some browsers require a click to enable audio. The public demo in `docs/index.html` is a static, dependency-free website intended for GitHub Pages. It demonstrates page navigation, watchlist interaction, a paper trading example, interactive research, rule creation, a quant illustration, and a scripted AI walkthrough. All presented market data is **synthetic** and clearly labeled.
 
 The demo never requests or stores API keys. The desktop product must never be represented as providing reliable real-time market data without external provider verification.
 
