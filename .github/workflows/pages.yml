@@ -1,10 +1,10 @@
-name: Deploy Interactive Demo
+name: Deploy InvestOne Demo with Narrated Video
 on:
   push:
     branches: [main]
     paths:
       - 'docs/**'
-      - 'scripts/create_demo_video.py'
+      - 'scripts/build_narrated_demo.py'
       - '.github/workflows/pages.yml'
   workflow_dispatch:
 permissions:
@@ -25,16 +25,19 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - name: Install recording prerequisites
+      - name: Install video generation dependencies
         run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg espeak-ng
+          sudo ln -sf /usr/bin/espeak-ng /usr/local/bin/espeak
           python -m pip install playwright==1.56.0
           python -m playwright install --with-deps chromium
-      - name: Render walkthrough MP4 from demo page
-        run: python scripts/create_demo_video.py
-      - name: Validate generated video
+      - name: Generate genuine 63-second video with narration
+        run: python scripts/build_narrated_demo.py
+      - name: Check embedded audio and video
         run: |
           test -s docs/demo.mp4
-          ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1 docs/demo.mp4
+          ffprobe -v error -show_entries format=duration:stream=codec_type -of default=noprint_wrappers=1 docs/demo.mp4
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
