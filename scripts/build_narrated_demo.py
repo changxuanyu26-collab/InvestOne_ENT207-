@@ -126,7 +126,7 @@ def create_audio(folder):
              "-ar","44100","-ac","1",str(padded)])
         audio_clips.append(padded)
     playlist=folder/"audio.ffconcat"
-    playlist.write_text("ffconcat version 1.0\\n"+"".join(f"file '{x.as_posix()}'\\n" for x in audio_clips),encoding="utf-8")
+    playlist.write_text("ffconcat version 1.0\n"+"".join(f"file '{x.as_posix()}'\n" for x in audio_clips),encoding="utf-8")
     output=folder/"narration.wav"
     run(["ffmpeg","-y","-hide_banner","-loglevel","error","-safe","0","-f","concat","-i",str(playlist),"-c:a","pcm_s16le",str(output)])
     return output
@@ -144,7 +144,7 @@ def create_video(folder):
         print(f"Encoded scene {i+1}/{len(SCENES)} ({duration:.2f}s)",flush=True)
         clips.append(clip)
     playlist=folder/"video.ffconcat"
-    playlist.write_text("ffconcat version 1.0\\n"+"".join(f"file '{x.as_posix()}'\\n" for x in clips),encoding="utf-8")
+    playlist.write_text("ffconcat version 1.0\n"+"".join(f"file '{x.as_posix()}'\n" for x in clips),encoding="utf-8")
     merged=folder/"silent.mp4"
     run(["ffmpeg","-y","-hide_banner","-loglevel","error",
          "-safe","0","-f","concat","-i",str(playlist),"-c","copy",str(merged)])
