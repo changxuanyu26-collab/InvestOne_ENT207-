@@ -105,7 +105,7 @@ def create_video(folder):
         run(["ffmpeg","-y","-hide_banner","-loglevel","error",
              "-threads","1","-filter_threads","1",
              "-loop","1","-framerate","24","-t",str(DURATION),"-i",str(image),
-             "-vf","format=yuv420p","-c:v","libx264","-preset","ultrafast",
+             "-vf","pad=ceil(iw/2)*2:ceil(ih/2)*2,format=yuv420p","-c:v","libx264","-preset","ultrafast",
              "-crf","28","-pix_fmt","yuv420p","-r","24","-an",str(clip)])
         print(f"Encoded segment {i+1}/9",flush=True)
         clips.append(clip)
