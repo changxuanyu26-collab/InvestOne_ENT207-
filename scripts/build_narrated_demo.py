@@ -48,8 +48,8 @@ async def record(folder):
         html = (DOCS/"index.html").read_text(encoding="utf-8")
         css = (DOCS/"site.css").read_text(encoding="utf-8")
         js = (DOCS/"site.js").read_text(encoding="utf-8")
-        html = html.replace('<link rel="stylesheet" href="site.css">', "<style>"+css+"</style>")
-        html = html.replace('<script src="site.js"></script>', "<script>"+js+"</script>")
+        html = html.replace('<link rel="stylesheet" href="site.css?v=okx-white-v2">', "<style>"+css+"</style>")
+        html = html.replace('<script src="site.js?v=okx-white-v2"></script>', "<script>"+js+"</script>")
         errors = []
         page.on("pageerror", lambda err: errors.append(str(err)))
         await page.set_content(html, wait_until="load")
