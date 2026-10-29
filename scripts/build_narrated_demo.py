@@ -115,7 +115,7 @@ def create_audio(folder):
             raw_audio.append(raw)
             print(f"Neural voice {i+1}/{len(SCENES)}: {length:.2f}s, scene {duration:.2f}s",flush=True)
     finally:
-        tts.voices.close()
+        del tts
 
     audio_clips = []
     for i,raw in enumerate(raw_audio):
