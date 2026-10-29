@@ -28,11 +28,15 @@ jobs:
       - name: Install video generation dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y ffmpeg espeak-ng
-          sudo ln -sf /usr/bin/espeak-ng /usr/local/bin/espeak
-          python -m pip install playwright==1.56.0
+          sudo apt-get install -y ffmpeg espeak-ng libsndfile1
+          python -m pip install playwright==1.56.0 kokoro-onnx==0.4.9 soundfile==0.13.1
           python -m playwright install chromium
-      - name: Generate narrated MP4 from latest light-theme demo
+          mkdir -p models
+          curl -fL --retry 3 -o models/kokoro-v1.0.onnx https://github.com/thewh1teagle/kokoro-onnx/releases/download/model-files-v1.0/kokoro-v1.0.onnx
+          curl -fL --retry 3 -o models/voices-v1.0.bin https://github.com/thewh1teagle/kokoro-onnx/releases/download/model-files-v1.0/voices-v1.0.bin
+          test -s models/kokoro-v1.0.onnx
+          test -s models/voices-v1.0.bin
+      - name: Generate neural-voice product film from latest light-theme demo
         run: |
           python scripts/build_narrated_demo.py
           ls -lah docs/demo.mp4
