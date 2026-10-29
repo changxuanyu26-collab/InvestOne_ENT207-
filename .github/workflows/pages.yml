@@ -32,8 +32,10 @@ jobs:
           sudo ln -sf /usr/bin/espeak-ng /usr/local/bin/espeak
           python -m pip install playwright==1.56.0
           python -m playwright install --with-deps chromium
-      - name: Generate genuine 63-second video with narration
-        run: python scripts/build_narrated_demo.py
+      - name: Generate narrated MP4 from latest light-theme demo
+        run: |
+          python scripts/build_narrated_demo.py
+          ls -lah docs/demo.mp4
       - name: Check embedded audio and video
         run: |
           test -s docs/demo.mp4
