@@ -1,5 +1,5 @@
 "use strict";
-const NAV=[['overview','Overview','▤'],['markets','Market Research','⌁'],['portfolio','Portfolio','◫'],['quant','Quant Lab','▥'],['ai','AI Research','✧'],['automation','Automation','◷'],['community','Community','◎'],['frameworks','Investor Frameworks','◈']];
+const NAV=[['ai','AI Investment Chatbot','✧'],['personal','Personalised Intelligence','◉'],['automation','Continuous Automation','◷'],['community','Community Integration','◎'],['humans','Investor Digital Humans','◇']];
 const TICKERS=[{s:'NVDA',n:'NVIDIA Corporation',p:125.60,c:1.72},{s:'AAPL',n:'Apple Inc.',p:215.40,c:-0.43},{s:'MSFT',n:'Microsoft Corporation',p:390.80,c:0.88},{s:'SPY',n:'SPDR S&P 500 ETF',p:512.30,c:0.57},{s:'GOOGL',n:'Alphabet Inc.',p:174.20,c:-0.24}];
 const byId=id=>document.getElementById(id);
 const usd=v=>'$'+Number(v).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
