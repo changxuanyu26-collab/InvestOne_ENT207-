@@ -73,3 +73,45 @@ body{letter-spacing:-.12px}
 .video-error{border:1px solid #101010;background:#FFFFFF!important;color:#101010!important}
 .video-badge{color:#101010!important;font-weight:800}
 a,a:visited{color:#101010;text-decoration-color:#21D59A;text-decoration-thickness:2px}
+
+
+/* Original InvestOne proposal: exactly five integrated core workflows. */
+.five-hero{border:1px solid #101010;border-radius:14px;padding:28px 33px;margin:0 0 19px;background:#fff;}
+.five-hero .eyebrow{font-weight:800;font-size:11px;letter-spacing:1.3px;color:#101010}
+.five-hero h1{font-size:clamp(24px,3vw,38px);letter-spacing:-1.3px;font-weight:830;line-height:1.15;color:#101010;margin:13px 0 14px}
+.five-hero p{font-size:14px;color:#101010;line-height:1.7;max-width:690px;margin:0 0 18px}
+.five-hero .button{margin:2px 7px 2px 0}
+.context-strip{border:1px solid #e6e6e6;background:#fff;display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:13px 16px;border-radius:10px;margin:0 0 18px}
+.context-token{border-left:3px solid #21D59A;padding:6px 15px 6px 11px;font-size:12px;color:#101010;display:inline-flex;gap:8px;align-items:center}
+.context-token b{font-weight:800;color:#101010}
+.feature-step{display:flex;gap:14px;border-bottom:1px solid #e5e5e5;padding:15px 0;align-items:flex-start}
+.feature-step:last-child{border:0}
+.feature-step>span{font-size:12px;font-weight:850;color:#21D59A;min-width:24px}
+.feature-step>div{flex:1}
+.feature-step b,.data-line b{color:#101010;font-size:14px;font-weight:800}
+.feature-step p{font-size:12px;line-height:1.6;color:#101010;margin:5px 0 10px}
+.quick-prompts{display:flex;gap:8px;flex-wrap:wrap;margin-top:13px}
+.quick-prompts button{background:#fff;color:#101010;padding:8px 11px;border:1px solid #101010;border-radius:7px;cursor:pointer;font-size:12px}
+.quick-prompts button:hover{border-color:#21D59A}
+.profile-form{display:grid;gap:12px;grid-template-columns:repeat(2,minmax(0,1fr))}
+.profile-form>.button,.profile-form>.form-feedback{grid-column:1/-1}
+.data-line{display:flex;justify-content:space-between;gap:15px;align-items:center;padding:14px 0;border-bottom:1px solid #e5e5e5}
+.data-line span{color:#101010;font-size:12px;text-align:right}
+.workflow-line{display:flex;flex-wrap:wrap;gap:14px;align-items:center;padding:18px 0}
+.workflow-line b{font-weight:750;color:#101010;font-size:12px}
+.workflow-line>span{color:#21D59A;font-weight:850}
+.section-gap{margin-top:18px}
+.persona-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin:0 0 18px}
+.persona-card{display:grid;text-align:left;align-content:start;gap:9px;padding:22px;border:1px solid #d9d9d9;border-radius:12px;background:#fff;color:#101010;cursor:pointer;min-height:155px}
+.persona-card strong{font-size:22px;letter-spacing:-.5px;color:#101010}
+.persona-card span{font-size:12px;color:#101010}
+.persona-card.selected{border:2px solid #21D59A;padding:21px}
+.persona-card:hover{border-color:#21D59A}
+.persona-card:focus-visible,.quick-prompts button:focus-visible{outline:2px solid #21D59A;outline-offset:2px}
+.nav button{min-height:45px}
+.nav .nav-text{line-height:1.35}
+.nav{gap:7px}
+.sidebar{width:266px}
+.content{max-width:1480px;padding:28px 32px}
+@media(max-width:1100px){.sidebar{width:75px}.content{padding:26px}}
+@media(max-width:750px){.sidebar{width:100%}.persona-grid,.profile-form{grid-template-columns:1fr}.five-hero{padding:22px 19px}.context-strip{padding:10px}.context-token{border-left-width:2px;padding:6px 10px}.workflow-line{gap:7px}.data-line{align-items:flex-start}}
