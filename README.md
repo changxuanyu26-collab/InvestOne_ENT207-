@@ -14,23 +14,25 @@ A professional light-theme investment intelligence workspace that combines marke
 
 > **Demo data notice** — The public browser demo is an interactive **offline simulation**. The sample market prices, events, financial statistics and any scripted "AI" response are illustrative, not live financial data, not live model responses, and not investment advice. The separately distributed local desktop app connects to third-party financial endpoints and can call a user-configured Highway API, with availability dependent on the providers.
 
-## Product overview
+## Original five-core product design
 
-| Workspace | What it does |
+The public **Interactive Demo** follows the original ENT207 proposal rather than the previous eight-page menu. It contains exactly these five linked core functions:
+
+| Core function | Clickable demonstration |
 |---|---|
-| Overview | Summary of paper assets, watchlist, monitored events, and research actions |
-| Market research | Tickers, historical charts and sourced financial research |
-| Portfolio | Virtual cash, positions, paper trades and approximate portfolio risk |
-| Quant Lab | Monthly sector allocation research, factor weighting and historical backtests |
-| AI Assistant | Evidence-aware research with the user's Highway API key (desktop app only) |
-| Research Library | Locally saved documents and analysis context |
-| Automation | User-defined market monitoring rules while the desktop service runs |
-| Community Insights | Separates public sentiment and opinions from official disclosures |
-| Investment Frameworks | Educational simulations inspired by publicly documented Buffett, Munger and Graham principles |
+| AI Investment Chatbot | Natural-language research questions, scripted context-sensitive answers, links to other modules |
+| Personalised Investment Intelligence | Editable risk tolerance, investment horizon, sector interests and example paper holdings; profile influences sample AI analysis |
+| Continuous Monitoring & Automation | Create and view session-only example price rules; no live monitoring |
+| Forum & Community Integration | Compare illustrated bullish/bearish theses and pass them to the assistant for analysis |
+| Investor Digital Humans | Switch between Buffett-, Munger- and Graham-inspired educational lenses, then continue in the chatbot |
+
+These pages use synthetic market prices and scripted AI responses. They demonstrate the **intended integration and user journey**, not real-time market ingestion, actual AI inference or production-grade financial advice.
+
+The previously published narrated product video is retained **without modifying or regenerating the MP4**. It is a recorded view of the earlier interface and may therefore show a different menu than the current manual demo.
 
 ## Demo
 
-The prominent **▶ Play Demo** button opens a true 63-second narrated MP4 player with native playback, volume and seekable progress controls. The video uses a light financial-terminal design inspired by information hierarchy in leading investment apps. Append `?autoplay=1` to open the video player automatically; some browsers require a click to enable audio. The public demo in `docs/index.html` is a static, dependency-free website intended for GitHub Pages. It demonstrates page navigation, watchlist interaction, a paper trading example, interactive research, rule creation, a quant illustration, and a scripted AI walkthrough. All presented market data is **synthetic** and clearly labeled.
+The **▶ Play Demo** button opens the preserved narrated MP4 player with native playback, volume and seekable progress controls. The video uses a light financial-terminal design inspired by information hierarchy in leading investment apps. Append `?autoplay=1` to open the video player automatically; some browsers require a click to enable audio. The public demo in `docs/index.html` is a static, dependency-free website intended for GitHub Pages. It demonstrates five linked core product functions, configurable preferences, example monitoring rules, a framework comparison and context-sensitive scripted research. All presented market data is **synthetic** and clearly labeled.
 
 The demo never requests or stores API keys. The desktop product must never be represented as providing reliable real-time market data without external provider verification.
 
