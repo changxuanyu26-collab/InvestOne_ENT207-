@@ -10,12 +10,6 @@ let investor='Buffett';
 const total=()=>cash+TICKERS.reduce((n,x)=>n+(holdings[x.s]||0)*x.p,0);
 const pageHero=(title,desc)=>`<div class="head-row"><div><div class="eyebrow">INVESTMENT INTELLIGENCE</div><h1 class="page-title">${title}</h1><p class="page-sub">${desc}</p></div><div class="quick-actions"><button class="button button-sm" data-video="1">▶ Watch film</button></div></div>`;
 const stat=(title,value,foot,cls='')=>`<div class="panel stat"><div class="label">${title}</div><strong class="${cls}">${value}</strong><small>${foot}</small></div>`;
- const pts=Array.from({length:60},(_,i)=>{let v=170-i*1.8+Math.sin(i*.44+seed)*14+Math.sin(i*.18+seed)*11;return {x:20+i*12.45,y:v}});
- let draw='';if(!candles){draw=`<defs><linearGradient id="shade-${seed}" x1="0" x2="0" y1="0" y2="1"><stop offset="0%" stop-color="#E7FFF5" stop-opacity=".75"/><stop offset="100%" stop-color="white" stop-opacity="0"/></linearGradient></defs><path d="M${pts.map(p=>p.x+','+p.y).join(' L')} L754,215 L20,215 Z" fill="url(#shade-${seed})"/><path d="M${pts.map(p=>p.x+','+p.y).join(' L')}" stroke="#21D59A" stroke-width="2.7" fill="none" stroke-linejoin="round"/>`}
- else {draw=pts.filter((_,i)=>i%2===0).map((p,i)=>{let o=p.y+Math.sin(i*1.7)*9,c=p.y+Math.sin(i*.98+1)*10,up=c<o;return `<line x1="${p.x}" x2="${p.x}" y1="${Math.min(o,c)-8}" y2="${Math.max(o,c)+8}" stroke="${up?'#21D59A':'#101010'}"/><rect x="${p.x-3.5}" y="${Math.min(o,c)}" width="7" height="${Math.max(2,Math.abs(o-c))}" rx="1" fill="${up?'#21D59A':'#101010'}"/>`}).join('')}
- let bars=Array.from({length:40},(_,i)=>`<rect x="${20+i*18}" y="${231-(8+i%7*2.4)}" width="7" height="${8+i%7*2.4}" rx="1" fill="${i%4===0?'#21D59A':'#EAEAEA'}"/>`).join('');return `<svg viewBox="0 0 800 260" role="img" aria-label="Illustrative synthetic chart, not real market prices"><g>${grid}</g>${draw}${bars}<g fill="#101010" font-family="Arial" font-size="12"><text x="20" y="257">Jan</text><text x="185" y="257">Mar</text><text x="362" y="257">Jun</text><text x="537" y="257">Sep</text><text x="710" y="257">Dec</text></g></svg>`}
-
-
 function actionButton(label,id){return '<button type="button" class="button button-sm" data-go="'+id+'">'+label+'</button>'}
 function researchPill(name,val){return '<span class="context-token"><b>'+name+'</b> '+esc(val)+'</span>'}
 function capitalRows(){return Object.entries(holdings).filter(x=>x[1]>0).map(([t,qty])=>'<div class="data-line"><strong>'+t+'</strong><span>'+qty+' paper shares · '+usd(qty*(TICKERS.find(x=>x.s===t)?.p||0))+'</span></div>').join('')}
@@ -54,7 +48,7 @@ function personal(){
  + '<label class="field"><span>SECTOR OF INTEREST</span><select name="sector">'+opts('sector',['Technology','Manufacturing','Healthcare','Diversified'])+'</select></label>'
  + '<label class="field"><span>FINANCIAL EXPERIENCE</span><select name="experience">'+opts('experience',['Beginner','Intermediate','Advanced'])+'</select></label>'
  + '<button class="button button-primary" type="submit">Save demo preferences</button><p id="profile-feedback" class="form-feedback">Selections affect the next scripted AI answer; no account is created.</p></form></div>'
- + '<div class="panel"><div class="section-top"><h2>Your portfolio context</h2>'</div>'+capitalRows()
+ + '<div class="panel"><div class="section-top"><h2>Your portfolio context</h2></div>'+capitalRows()
  + '<div class="insight"><b>Why personalisation?</b>The same NVIDIA announcement matters differently when technology is already a significant share of your holdings. Context changes which risks deserve attention.</div>'
  + '<button type="button" class="button button-sm" data-prompt="Assess NVIDIA given my current holdings and risk profile">Analyse my exposure in AI →</button></div></div>';
 }
@@ -94,10 +88,6 @@ function render(){byId('main-nav').innerHTML=NAV.map(([id,name,icon])=>`<button 
  document.querySelectorAll('[data-go]').forEach(el=>el.addEventListener('click',()=>{tab=el.dataset.go;render();window.scrollTo(0,0)}));
  document.querySelectorAll('[data-prompt]').forEach(el=>el.addEventListener('click',()=>{tab='ai';const t=el.dataset.prompt;messages.push({user:true,message:t},{user:false,message:scriptedAnswer(t)});render();}));
  document.querySelectorAll('[data-framework]').forEach(el=>el.addEventListener('click',()=>{investor=el.dataset.framework;render()}));document.querySelectorAll('[data-video]').forEach(el=>el.addEventListener('click',openVideo));
- const stock=byId('stock-select');if(stock)stock.addEventListener('change',e=>{selected=e.target.value;render()});
- const trade=byId('trade-form');if(trade)trade.addEventListener('submit',e=>{e.preventDefault();const f=new FormData(trade),s=f.get('symbol'),n=Number(f.get('quantity')),price=TICKERS.find(t=>t.s===s).p,side=f.get('side'),fee=price*n*.0005;if(side==='buy'){if(cash<price*n+fee){byId('trade-feedback').textContent='Insufficient virtual cash.';return}cash-=price*n+fee;holdings[s]=(holdings[s]||0)+n}else{if((holdings[s]||0)<n){byId('trade-feedback').textContent='Insufficient virtual shares.';return}cash+=price*n-fee;holdings[s]-=n}render();byId('trade-feedback').textContent=`Paper trade executed: ${side} ${n} ${s} at ${usd(price)}. No real money or orders.`});
- const factorSel=byId('factor-select');if(factorSel)factorSel.addEventListener('change',e=>factor=e.target.value);
- const run=byId('quant-run');if(run)run.addEventListener('click',()=>{byId('quant-plot').innerHTML=chart(factor==='balanced'?2:factor==='momentum'?5:8);byId('quant-feedback').textContent='Illustration updated. No historical backtest or performance statistic was calculated.'});
  const form=byId('ask-form');if(form)form.addEventListener('submit',e=>{e.preventDefault();const q=new FormData(form).get('question').trim();if(!q)return;messages.push({user:true,message:q},{user:false,message:scriptedAnswer(q)});render()});
  const profileForm=byId('profile-form');if(profileForm)profileForm.addEventListener('submit',e=>{e.preventDefault();const f=new FormData(profileForm);profile={risk:f.get('risk'),horizon:f.get('horizon'),sector:f.get('sector'),experience:f.get('experience')};render();byId('profile-feedback').textContent='Demo profile updated. Your AI context will now reflect these preferences.'});
  const rule=byId('rule-form');if(rule)rule.addEventListener('submit',e=>{e.preventDefault();const f=new FormData(rule),price=Number(f.get('threshold'));if(price>0){rules.push(`${f.get('symbol')} ${f.get('direction')} ${usd(price)}`);render();byId('rule-feedback').textContent='Example rule saved in memory. No real alerts are sent.'}});
