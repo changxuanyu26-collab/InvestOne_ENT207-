@@ -6,7 +6,7 @@
 
 *ENT207 · Quantitative Investment and Sector Allocation Strategies in Evolving Capital Markets*
 
-[**▶ Watch product film**](https://changxuanyu26-collab.github.io/InvestOne_ENT207-/?autoplay=1) · [**Try five-core interactive preview**](https://changxuanyu26-collab.github.io/InvestOne_ENT207-/) · [**⬇ Download Full App (Windows / Mac / Linux)**](https://changxuanyu26-collab.github.io/InvestOne_ENT207-/downloads/) · [**Full app source**](src/)
+[**▶ Watch product film**](https://changxuanyu26-collab.github.io/InvestOne_ENT207-/demo.mp4) · [**🌐 Try Our App — LIVE**](https://investone-live-production.up.railway.app/) · [**⬇ Download Full App (Windows / Mac / Linux)**](https://changxuanyu26-collab.github.io/InvestOne_ENT207-/downloads/) · [**Full app source**](src/)
 
 </div>
 
@@ -35,14 +35,25 @@ The six files are published by [GitHub Pages automated build](.github/workflows/
 
 **Signing status:** current Mac builds are unsigned/unnotarized, and Windows binaries are unsigned. Their operating systems may require approval before first launch. A download button does not eliminate these security prompts; a signed/notarized release requires the appropriate developer certificates.
 
-## Two deliverables — clearly distinguished
+## Live web app — no download, real data
 
-| Product | Deployment | Data / AI |
+**[Open the InvestOne Landing Page, then click TRY OUR APP](https://changxuanyu26-collab.github.io/InvestOne_ENT207-/)**
+
+The landing page leads to the real Go backend hosted on Railway, not to the old simulated preview. Visitors can access provider-backed financial data without registration. Their research preferences, holdings, alerts and documents are isolated in persistent browser workspaces. For actual AI analysis, visitors enter their own Highway API key in the app settings; keys remain in server memory.
+
+The five connected features are real AI Investment Chatbot (user-supplied key), Personalised Intelligence (saved user context), Continuous Automation (server-side rules), Community Integration (real public RSS where available), and Investor Digital Humans (educational Buffett/Munger/Graham AI frameworks, stylized avatars and browser speech synthesis). The last feature is not a clone of any actual investor.
+
+**Independent cloud test:** [Successful GitHub Actions run](https://github.com/changxuanyu26-collab/InvestOne_ENT207-/actions/runs/42684363153) validated HTTPS, visitor isolation, actual SPY quote/source/timestamps from Yahoo, 19 genuine NVDA news items, and safe rejection when no paid AI key was provided. A successful paid model response still needs testing with a legitimate user Key. Providers can rate-limit or become unavailable.
+
+The [original video](https://changxuanyu26-collab.github.io/InvestOne_ENT207-/demo.mp4) remains available, and the [old synthetic interactive preview](https://changxuanyu26-collab.github.io/InvestOne_ENT207-/app/) remains for archival demonstration only.
+
+## Deployment modes
+
+| Edition | Runs where | Data and AI |
 |---|---|---|
-| **Full InvestOne V2 Desktop App** | Apple Silicon Mac, Go local backend; release ZIP | Requests real market, news, forum and SEC endpoints at runtime; user-provided Highway API key for LLM |
-| **GitHub Pages interactive preview** | Public static site in `docs/` | Explicitly synthetic financial numbers and scripted AI; no backend, secret keys or brokerage access |
-
-The static GitHub Pages website **cannot run the Go desktop backend or safely hold a private model API key**. It remains a visual/interactive preview. To use external financial feeds and the real AI workflow, launch the Mac app locally.
+| **Web App** | Railway HTTPS, reachable from GitHub landing page | Live upstream data, personal browser sessions, user-supplied Highway API key |
+| **Desktop** | Mac, Windows and Linux local Go server | Same external providers and user-owned credentials |
+| **Archived preview** | GitHub Pages /app/ | Synthetic examples only |
 
 ## Original five connected core functions
 
