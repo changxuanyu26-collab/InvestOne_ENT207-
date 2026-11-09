@@ -6,9 +6,28 @@
 
 *ENT207 · Quantitative Investment and Sector Allocation Strategies in Evolving Capital Markets*
 
-[**▶ Watch product film**](https://changxuanyu26-collab.github.io/InvestOne_ENT207-/?autoplay=1) · [**Try five-core interactive preview**](https://changxuanyu26-collab.github.io/InvestOne_ENT207-/) · [**Download actual Mac App**](https://github.com/changxuanyu26-collab/InvestOne_ENT207-/releases) · [**Full app source**](src/)
+[**▶ Watch product film**](https://changxuanyu26-collab.github.io/InvestOne_ENT207-/?autoplay=1) · [**Try five-core interactive preview**](https://changxuanyu26-collab.github.io/InvestOne_ENT207-/) · [**⬇ Download Full App (Windows / Mac / Linux)**](https://github.com/changxuanyu26-collab/InvestOne_ENT207-/releases/tag/v2.1.0-rc1) · [**Full app source**](src/)
 
 </div>
+
+## Download the actual application
+
+**[⬇ Download InvestOne for your computer — Windows / macOS / Linux](https://github.com/changxuanyu26-collab/InvestOne_ENT207-/releases/tag/v2.1.0-rc1)**
+
+| Computer | Recommended downloadable ZIP |
+|---|---|
+| **Windows Intel / AMD (x64)** | [**Download Windows x64**](https://github.com/changxuanyu26-collab/InvestOne_ENT207-/releases/download/v2.1.0-rc1/InvestOne-v2.1.0-rc1-Windows-x64.zip) |
+| Windows ARM (ARM64) | [Download Windows ARM64](https://github.com/changxuanyu26-collab/InvestOne_ENT207-/releases/download/v2.1.0-rc1/InvestOne-v2.1.0-rc1-Windows-ARM64.zip) |
+| **Mac with Apple M chip** | [**Download macOS Apple Silicon**](https://github.com/changxuanyu26-collab/InvestOne_ENT207-/releases/download/v2.1.0-rc1/InvestOne-v2.1.0-rc1-Mac-AppleSilicon.zip) |
+| Mac with Intel processor | [Download macOS Intel](https://github.com/changxuanyu26-collab/InvestOne_ENT207-/releases/download/v2.1.0-rc1/InvestOne-v2.1.0-rc1-Mac-Intel.zip) |
+| Linux Intel / AMD (x64) | [Download Linux x64](https://github.com/changxuanyu26-collab/InvestOne_ENT207-/releases/download/v2.1.0-rc1/InvestOne-v2.1.0-rc1-Linux-x64.zip) |
+| Linux ARM64 | [Download Linux ARM64](https://github.com/changxuanyu26-collab/InvestOne_ENT207-/releases/download/v2.1.0-rc1/InvestOne-v2.1.0-rc1-Linux-ARM64.zip) |
+
+Extract the ZIP and double-click `Open InvestOne.cmd` on Windows or `Open InvestOne.command` on Mac. Linux users launch `Open InvestOne.sh` (some desktop environments require allowing execution first). This runs the complete local Go backend and automatically opens `http://127.0.0.1:18791`, without Python, Node.js or Docker. Log in as **红豆薏米水** and enter your own Highway API key.
+
+**For the group member with Intel Core i7-14650HX + RTX 4060 Laptop + 64-bit Windows x64: choose Windows x64.** No NVIDIA GPU setup is needed to access external financial data and hosted AI. The download remains architecture-specific; Windows ARM64 is for ARM PCs, not Intel CPUs.
+
+Read the [complete multi-platform instructions](docs/MULTIPLATFORM.md). The application bundles provider adapters for real external financial feeds but depends on each provider's uptime, network access and license conditions. The desktop binaries are not code signed.
 
 ## Two deliverables — clearly distinguished
 
@@ -50,9 +69,9 @@ The Go source under `src/` uses actual HTTPS provider responses and records prov
 
 See [detailed desktop setup and data-provider guide](docs/DESKTOP_GUIDE.md).
 
-## macOS Apple Silicon quick start
+## Legacy Apple Silicon release (V2.0 RC)
 
-1. Get the latest [InvestOne V2 Apple Silicon ZIP](https://github.com/changxuanyu26-collab/InvestOne_ENT207-/releases/tag/v2.0.0-rc2).
+1. For the current cross-platform build use the V2.1 downloads above; the old [InvestOne V2 Apple Silicon ZIP](https://github.com/changxuanyu26-collab/InvestOne_ENT207-/releases/tag/v2.0.0-rc2).
 2. Unzip it and double-click **Open InvestOne.command**. The bundled app is compiled for Mac M-series; no Python, Node, or Docker installation is required.
 3. Sign in with `红豆薏米水` or `RedBeanCoix` and, for AI analysis, enter your Highway API Key.
 4. Open **Settings → Check live data connections** and inspect each endpoint, its source and timestamp. For official SEC data, supply your own legitimate contact email.
