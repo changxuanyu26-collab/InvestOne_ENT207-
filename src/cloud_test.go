@@ -108,3 +108,37 @@ func TestCloudLandingAndSessionIsolation(t *testing.T) {
 		t.Fatalf("CSRF origin not blocked: %d", reject.Code)
 	}
 }
+
+func TestCloudCrossSiteTopLevelNavigation(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	cloud, err := newCloudServer(ctx, t.TempDir())
+	if err != nil { t.Fatal(err) }
+	handler := cloud.handler()
+	request := func(method,path,mode,dest string) int {
+		r:=httptest.NewRequest(method,"https://investone.example"+path,nil)
+		r.Header.Set("Sec-Fetch-Site","cross-site")
+		r.Header.Set("Sec-Fetch-Mode",mode)
+		r.Header.Set("Sec-Fetch-Dest",dest)
+		r.Header.Set("X-InvestOne","1")
+		w:=httptest.NewRecorder()
+		handler.ServeHTTP(w,r)
+		return w.Code
+	}
+	for _,path:= range []string{"/","/app/","/app","/landing"} {
+		if got:=request("GET",path,"navigate","document"); got!=200 {
+			t.Errorf("Cross-site top-level navigation %s should succeed; got %d",path,got)
+		}
+	}
+	for _,tc:=range []struct{method,path,mode,dest string}{
+		{"GET","/api/state","cors","empty"},
+		{"POST","/api/login","navigate","document"},
+		{"GET","/app.js","no-cors","script"},
+		{"GET","/api/state","navigate","document"},
+		{"GET","/app/","no-cors","iframe"},
+	} {
+		if got:=request(tc.method,tc.path,tc.mode,tc.dest);got!=http.StatusForbidden{
+			t.Errorf("Unsafe cross-site request %s %s (%s/%s) returned %d",tc.method,tc.path,tc.mode,tc.dest,got)
+		}
+	}
+}
