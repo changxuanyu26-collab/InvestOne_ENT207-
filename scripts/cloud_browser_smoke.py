@@ -28,6 +28,19 @@ with sync_playwright() as playwright:
  assert "chat" in page.url
  page.locator("textarea#chat-input").wait_for(timeout=10000)
  assert not errors,errors
+ # Reproduce the real bug: leave GitHub Pages and navigate to Railway
+ # so Chromium sends Sec-Fetch-Site: cross-site on the document request.
+ from_github=browser.new_context(viewport={"width":1280,"height":800})
+ external=from_github.new_page()
+ external.goto("https://changxuanyu26-collab.github.io/InvestOne_ENT207-/",wait_until="load",timeout=60000)
+ external_cta=external.get_by_role("link",name="Try InvestOne live web app")
+ assert external_cta.count()==1,"GitHub Pages landing CTA missing"
+ external_cta.click()
+ external.wait_for_url("**/app/",timeout=25000)
+ external.locator("nav .nav-item").first.wait_for(timeout=20000)
+ assert "Cross-site request blocked" not in external.locator("body").inner_text()
+ print("CROSS-SITE GITHUB → RAILWAY NAVIGATION PASS",flush=True)
+ from_github.close()
  print("DESKTOP PASS: landing, CTA, guest entry, 5 modules, key-setup link, digital avatars",flush=True)
  ctx.close()
  mobile=browser.new_context(viewport={"width":390,"height":844},is_mobile=True,device_scale_factor=2)
