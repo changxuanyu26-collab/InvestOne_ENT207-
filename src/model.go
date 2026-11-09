@@ -15,7 +15,7 @@ import (
 	"time"
 )
 
-const Version = "2.0.0"
+const Version = "2.1.0-rc1"
 const DefaultModel = "deepseek/deepseek-v4.1-flash"
 const APIBase = "https://api.highwayapi.ai/openai"
 const Username = "红豆薏米水"
