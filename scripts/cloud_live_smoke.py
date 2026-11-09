@@ -58,4 +58,22 @@ try:
 except urllib.error.HTTPError as ex:
     assert ex.code in (400,401,422,502) and b"Highway API key" in ex.read(),ex.code
 print("AI-KEY GUARD PASS (no paid AI request made)",flush=True)
+
+# Exercise persistent automation with a non-triggering rule, without using AI credits.
+a.post("/api/rules",{"type":"price_below","symbol":"SPY","threshold":1,"keyword":"","auto_ai":False})
+after=a.get("/api/state")
+assert any(r.get("symbol")=="SPY" and r.get("threshold")==1 for r in after["state"]["rules"]),after["state"]["rules"]
+check=a.post("/api/rules/check",{})
+assert check.get("ok") is True,check
+print("CLOUD MONITORING PASS: rule persisted, real provider check executed",flush=True)
+
+# Community responses come from the public upstream endpoint, or report its error.
+community=a.get("/api/community?symbol=NVDA")
+assert isinstance(community.get("items"),list) and isinstance(community.get("error"),str),community
+print("COMMUNITY:",len(community["items"]),"actual items; error:",community["error"][:160] or "none",flush=True)
+
+# Use actual historical bars for the full ETF universe: no synthetic backtest curve.
+quant=a.post("/api/quant",{"universe":"sectors","range":"2y","top_n":3,"fee_bps":5,"momentum":50,"low_vol":30,"trend":20,"risk_off":True})
+assert quant.get("curve") and quant.get("sources") and quant.get("observations",0)>100,quant
+print("REAL MULTI-FACTOR BACKTEST PASS:",quant["observations"],"observations,",len(quant["sources"]),"sources",flush=True)
 print("VERIFIED: REAL BACKEND, ISOLATED VISITORS, MARKET DATA AND NEWS",flush=True)
