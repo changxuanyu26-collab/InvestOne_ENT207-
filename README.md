@@ -6,30 +6,34 @@
 
 *ENT207 · Quantitative Investment and Sector Allocation Strategies in Evolving Capital Markets*
 
-[**▶ Watch product film**](https://changxuanyu26-collab.github.io/InvestOne_ENT207-/?autoplay=1) · [**Try five-core interactive preview**](https://changxuanyu26-collab.github.io/InvestOne_ENT207-/) · [**⬇ Download Full App (Windows / Mac / Linux)**](https://github.com/changxuanyu26-collab/InvestOne_ENT207-/actions/runs/42670737818/artifacts/13698277828) · [**Full app source**](src/)
+[**▶ Watch product film**](https://changxuanyu26-collab.github.io/InvestOne_ENT207-/?autoplay=1) · [**Try five-core interactive preview**](https://changxuanyu26-collab.github.io/InvestOne_ENT207-/) · [**⬇ Download Full App (Windows / Mac / Linux)**](https://changxuanyu26-collab.github.io/InvestOne_ENT207-/downloads/) · [**Full app source**](src/)
 
 </div>
 
-## Download the actual application — Windows, macOS, Linux
+## Download InvestOne — six one-click options
 
-[**⬇ Download all six verified platform ZIPs (GitHub Actions artifact)**](https://github.com/changxuanyu26-collab/InvestOne_ENT207-/actions/runs/42670737818/artifacts/13698277828)
+<div align="center">
 
-The GitHub Actions archive contains six individually named ZIPs and a `SHA256SUMS.txt` checksum file. Choose the ZIP matching your computer:
+### [⬇ Open the six-platform Download Center](https://changxuanyu26-collab.github.io/InvestOne_ENT207-/downloads/)
 
-| Operating system and CPU | Package inside archive | Launch after extraction |
-|---|---|---|
-| **Windows Intel / AMD x64** | **InvestOne-v2.1.0-rc1-Windows-x64.zip** | `Open InvestOne.cmd` |
-| Windows ARM64 | InvestOne-v2.1.0-rc1-Windows-ARM64.zip | `Open InvestOne.cmd` |
-| **Mac Apple Silicon (M series)** | **InvestOne-v2.1.0-rc1-Mac-AppleSilicon.zip** | `Open InvestOne.command` |
-| Mac Intel | InvestOne-v2.1.0-rc1-Mac-Intel.zip | `Open InvestOne.command` |
-| Linux x64 | InvestOne-v2.1.0-rc1-Linux-x64.zip | `Open InvestOne.sh` |
-| Linux ARM64 | InvestOne-v2.1.0-rc1-Linux-ARM64.zip | `Open InvestOne.sh` |
+<a href="https://changxuanyu26-collab.github.io/InvestOne_ENT207-/downloads/InvestOne-v2.1.0-rc1-Windows-x64.zip"><img alt="Download Windows x64" src="https://img.shields.io/badge/⬇_Download-Windows_x64-21D59A?style=for-the-badge&labelColor=101010" /></a>
+<a href="https://changxuanyu26-collab.github.io/InvestOne_ENT207-/downloads/InvestOne-v2.1.0-rc1-Windows-ARM64.zip"><img alt="Download Windows ARM64" src="https://img.shields.io/badge/⬇_Download-Windows_ARM64-21D59A?style=for-the-badge&labelColor=101010" /></a>
 
-**For the team member with Intel Core i7-14650HX and 64-bit Windows, choose Windows-x64.** The GeForce RTX 4060 is not necessary for cloud AI inference or financial market data requests.
+<a href="https://changxuanyu26-collab.github.io/InvestOne_ENT207-/downloads/InvestOne-v2.1.0-rc1-Mac-AppleSilicon.zip"><img alt="Download Mac Apple Silicon" src="https://img.shields.io/badge/⬇_Download-Mac_Apple_Silicon-21D59A?style=for-the-badge&labelColor=101010" /></a>
+<a href="https://changxuanyu26-collab.github.io/InvestOne_ENT207-/downloads/InvestOne-v2.1.0-rc1-Mac-Intel.zip"><img alt="Download Mac Intel" src="https://img.shields.io/badge/⬇_Download-Mac_Intel-21D59A?style=for-the-badge&labelColor=101010" /></a>
 
-This is an Actions artifact rather than a permanent GitHub Release: GitHub sign-in may be needed and the build artifact is retained for 90 days. **The GitHub Release publishing action currently returns HTTP 403 due to repository workflow permissions**, so do not treat direct Release asset URLs as available until authorization is fixed. Read [platform instructions](docs/MULTIPLATFORM.md).
+<a href="https://changxuanyu26-collab.github.io/InvestOne_ENT207-/downloads/InvestOne-v2.1.0-rc1-Linux-x64.zip"><img alt="Download Linux x64" src="https://img.shields.io/badge/⬇_Download-Linux_x64-21D59A?style=for-the-badge&labelColor=101010" /></a>
+<a href="https://changxuanyu26-collab.github.io/InvestOne_ENT207-/downloads/InvestOne-v2.1.0-rc1-Linux-ARM64.zip"><img alt="Download Linux ARM64" src="https://img.shields.io/badge/⬇_Download-Linux_ARM64-21D59A?style=for-the-badge&labelColor=101010" /></a>
 
-All versions contain the same local Go backend and web UI. Login with **红豆薏米水** plus your own Highway API Key; data providers and paid AI access require an external network and working provider credentials. Binaries are not notarized or signed.
+</div>
+
+Each button links **directly to its own ZIP**, with no combined archive and no GitHub sign-in required. After downloading, extract it, then double-click the included **Open InvestOne** launcher.
+
+**For Intel / AMD Windows laptops**, including the team's i7-14650HX computer, choose **Windows x64**. For Apple M-series Macs choose **Mac Apple Silicon**.
+
+The six files are published by [GitHub Pages automated build](.github/workflows/pages.yml), with integrity checksums at [SHA256SUMS.txt](https://changxuanyu26-collab.github.io/InvestOne_ENT207-/downloads/SHA256SUMS.txt). [Full platform and installation guide](docs/MULTIPLATFORM.md).
+
+**Signing status:** current Mac builds are unsigned/unnotarized, and Windows binaries are unsigned. Their operating systems may require approval before first launch. A download button does not eliminate these security prompts; a signed/notarized release requires the appropriate developer certificates.
 
 ## Two deliverables — clearly distinguished
 
