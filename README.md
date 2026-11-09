@@ -2,79 +2,89 @@
 
 # InvestOne
 
-**AI-Powered Personal Investment Intelligence**
+**AI-powered personal investment intelligence**
 
-A professional light-theme investment intelligence workspace that combines market evidence, simulated portfolios, quantitative backtesting, monitoring, a local research library, and AI-assisted analysis.
+*ENT207 · Quantitative Investment and Sector Allocation Strategies in Evolving Capital Markets*
 
-**ENT207 · Red Bean & Coix · Mac Apple Silicon / Browser Demo**
-
-[▶ **PLAY DEMO — ONE CLICK**](https://changxuanyu26-collab.github.io/InvestOne_ENT207-/?autoplay=1) · [Explore interactively](https://changxuanyu26-collab.github.io/InvestOne_ENT207-/) · [Demo source](docs/index.html) · [Architecture](ARCHITECTURE.md) · [Safety & data notes](SECURITY.md)
+[**▶ Watch product film**](https://changxuanyu26-collab.github.io/InvestOne_ENT207-/?autoplay=1) · [**Try five-core interactive preview**](https://changxuanyu26-collab.github.io/InvestOne_ENT207-/) · [**Download actual Mac App**](https://github.com/changxuanyu26-collab/InvestOne_ENT207-/releases) · [**Full app source**](src/)
 
 </div>
 
-> **Demo data notice** — The public browser demo is an interactive **offline simulation**. The sample market prices, events, financial statistics and any scripted "AI" response are illustrative, not live financial data, not live model responses, and not investment advice. The separately distributed local desktop app connects to third-party financial endpoints and can call a user-configured Highway API, with availability dependent on the providers.
+## Two deliverables — clearly distinguished
 
-## Original five-core product design
+| Product | Deployment | Data / AI |
+|---|---|---|
+| **Full InvestOne V2 Desktop App** | Apple Silicon Mac, Go local backend; release ZIP | Requests real market, news, forum and SEC endpoints at runtime; user-provided Highway API key for LLM |
+| **GitHub Pages interactive preview** | Public static site in `docs/` | Explicitly synthetic financial numbers and scripted AI; no backend, secret keys or brokerage access |
 
-The public **Interactive Demo** follows the original ENT207 proposal rather than the previous eight-page menu. It contains exactly these five linked core functions:
+The static GitHub Pages website **cannot run the Go desktop backend or safely hold a private model API key**. It remains a visual/interactive preview. To use external financial feeds and the real AI workflow, launch the Mac app locally.
 
-| Core function | Clickable demonstration |
-|---|---|
-| AI Investment Chatbot | Natural-language research questions, scripted context-sensitive answers, links to other modules |
-| Personalised Investment Intelligence | Editable risk tolerance, investment horizon, sector interests and example paper holdings; profile influences sample AI analysis |
-| Continuous Monitoring & Automation | Create and view session-only example price rules; no live monitoring |
-| Forum & Community Integration | Compare illustrated bullish/bearish theses and pass them to the assistant for analysis |
-| Investor Digital Humans | Switch between Buffett-, Munger- and Graham-inspired educational lenses, then continue in the chatbot |
+## Original five connected core functions
 
-These pages use synthetic market prices and scripted AI responses. They demonstrate the **intended integration and user journey**, not real-time market ingestion, actual AI inference or production-grade financial advice.
+**AI Investment Chatbot** provides a single natural-language research entry point, retrieving available market, filings, financial fact, news, portfolio and local-document context before calling the configured model.
 
-The previously published narrated product video is retained **without modifying or regenerating the MP4**. It is a recorded view of the earlier interface and may therefore show a different menu than the current manual demo.
+**Personalised Investment Intelligence** stores a research profile, holdings and personal preferences locally to provide relevant context, rather than generic market answers.
 
-## Demo
+**Continuous Monitoring & Automation** evaluates user rules and prepares alerts or refreshed analysis while the Mac service is running and awake.
 
-The **▶ Play Demo** button opens the preserved narrated MP4 player with native playback, volume and seekable progress controls. The video uses a light financial-terminal design inspired by information hierarchy in leading investment apps. Append `?autoplay=1` to open the video player automatically; some browsers require a click to enable audio. The public demo in `docs/index.html` is a static, dependency-free website intended for GitHub Pages. It demonstrates five linked core product functions, configurable preferences, example monitoring rules, a framework comparison and context-sensitive scripted research. All presented market data is **synthetic** and clearly labeled.
+**Forum & Community Integration** distinguishes unverified public discussion from dated financial sources, and supports saved evidence-backed opinions. Access depends on the external forum.
 
-The demo never requests or stores API keys. The desktop product must never be represented as providing reliable real-time market data without external provider verification.
+**Investor Digital Humans** offers Buffett-, Munger- and Graham-inspired *educational analysis frameworks* using publicly documented concepts and the LLM. Not an endorsement, a real-person clone, or financial advice.
 
-### Publish on GitHub Pages
+The backend also includes a market research panel, SEC fact and filings viewer, user research library, paper trades, portfolio context, factor analysis, sector allocation and historical multi-factor backtesting.
 
-Repository owner: **Settings → Pages → Build and deployment → Deploy from a branch → main → /docs → Save**. After GitHub finishes deployment, the demo will be at:
+## Real financial data: implemented and independently tested
 
-https://changxuanyu26-collab.github.io/InvestOne_ENT207-/
+The Go source under `src/` uses actual HTTPS provider responses and records provider attribution, quote/reference time, retrieval time, source link and adjustment flags. The frontend displays errors instead of filling gaps with invented live prices.
 
-**Important:** GitHub Pages must be enabled in repository settings for the Play Demo URL to work. The link may return 404 until GitHub Pages is enabled.
+| Research function | Current provider path | Notes |
+|---|---|---|
+| US equity and ETF quotes + history | Yahoo Finance chart 1/2 → Stooq daily prices | Unofficial and may be delayed; Stooq is **not real-time** |
+| China A-share daily bars | Yahoo chart 1/2 → Tencent public daily-K | Third-party public endpoints; adjustments differ |
+| Financial news | Yahoo Finance RSS → Google News RSS | Headline/snippet results; source dates are shown |
+| SEC company filings and financial facts | SEC EDGAR submissions / XBRL companyfacts | Requires a **real SEC contact email**, entered in local Settings |
+| Community discussion | Public Reddit RSS | Unavailable if blocked or restricted; local evidence saving remains usable |
+| AI analysis | User-supplied Highway OpenAI-compatible API | Default `deepseek/deepseek-v4.1-flash`; actual key required |
 
-## Desktop application
+**Independent evidence:** The [GitHub live-provider test run](https://github.com/changxuanyu26-collab/InvestOne_ENT207-/actions/runs/42665287680) successfully fetched actual SPY, NVDA and 600519.SS chart data, NVDA news and Reddit public posts on Nov 9, 2026 (UTC). The SEC and paid Highway calls were **not tested** in that run: no legitimate SEC contact email or user-paid AI key was supplied. Third-party availability may change; run the app's data-connection diagnostics on your Mac.
 
-The private/local desktop distribution is a **macOS Apple Silicon** application with a Go HTTP server bound to localhost and an embedded browser interface. It is not a multi-user authenticated cloud service.
+See [detailed desktop setup and data-provider guide](docs/DESKTOP_GUIDE.md).
 
-- Default login alias: `RedBeanCoix`
-- Legacy Chinese alias remains supported for existing users
-- AI provider: Highway OpenAI-compatible API
-- Default model: `deepseek/deepseek-v4.1-flash`
-- API key supplied at login and held only in process memory
-- Paper trades use virtual money; no brokerage orders
-- Data providers are third-party services and may be unavailable, delayed or restricted
+## macOS Apple Silicon quick start
 
-See [Architecture](ARCHITECTURE.md), [Security](SECURITY.md), and [limitations](LIMITATIONS.md).
+1. Get the latest [InvestOne V2 Apple Silicon ZIP](https://github.com/changxuanyu26-collab/InvestOne_ENT207-/releases/tag/v2.0.0-rc2).
+2. Unzip it and double-click **Open InvestOne.command**. The bundled app is compiled for Mac M-series; no Python, Node, or Docker installation is required.
+3. Sign in with `红豆薏米水` or `RedBeanCoix` and, for AI analysis, enter your Highway API Key.
+4. Open **Settings → Check live data connections** and inspect each endpoint, its source and timestamp. For official SEC data, supply your own legitimate contact email.
 
-## Engineering principles
+All personal state remains under `~/Library/Application Support/InvestOne/`. No API key or user portfolio is committed to GitHub. The Mac binary is not Apple-signed/notarized; macOS may require explicit approval for an app you trust.
 
-**Source provenance** · **No invented live prices** · **Paper trading only** · **Data minimization** · **Look-ahead-safe backtest timing** · **Explicit limitations**.
+## Source, tests and build
 
-The public materials are coursework demonstration artifacts, not investment recommendations, a broker, or a production-grade financial advisory system.
+The full, inspectable application is in [`src/`](src/); local entrypoint `src/main.go`, provider adapters `src/data.go` and `src/backup.go`, model integration `src/ai.go`, monitoring `src/monitor.go`, multi-factor backtest `src/quant.go`, and the five-core web interface in `src/web/`.
 
-## Development status
+```bash
+cd src
+go test ./...
+go vet ./...
+go run . -open=false
+# Explicit external request tests; do not run against fake fixtures:
+INVESTONE_LIVE_PROBE=1 go test -count=1 -v -run TestLiveFinancialProviders
+```
 
-- English-language UI and local Go app: developer build and automated tests.
-- Public interactive demo: standalone front-end with simulated data.
-- Third-party live data reliability: **not verified end-to-end on the user's Mac**.
-- Highway AI calls: **not verified with a paid key in the test environment**.
-- Public repo: will be expanded with audited source, tests and artifacts; file presence must not be inferred from the local distribution.
+Automated workflows:
+- [Mac ARM64 test/build/release](.github/workflows/mac-release.yml) — publishes the actual one-click ZIP and SHA256 checksum.
+- [Live real-market probe](.github/workflows/live-data-probe.yml) — requests authentic third-party feeds and reports failures.
+- [GitHub Pages interactive demo](.github/workflows/pages.yml) — preserves the originally published narrated video; the preview remains synthetic.
 
-## Technology
+## Technical and safety notes
 
-Go 1.23 standard library · HTML/CSS/JavaScript · SVG charts · GitHub Pages (demo) · macOS ARM64 (local desktop app).
+- Market providers can be rate-limited, delayed, discontinued or subject to license restrictions. The code performs runtime requests rather than distributing commercial or proprietary historical feeds.
+- Backtests use past signals and explicit modeling assumptions, but adjusted prices, fixed universes, execution simulation and selection biases remain research limitations.
+- All trades are **paper only**. No real brokerage order placement.
+- Monitoring runs while the desktop service is awake; a static GitHub Pages app cannot monitor continuously.
+- The local username is not a secure internet login. **Never expose the localhost Go server publicly.**
+- Digital-human features are educational prompts, not real investor identities, endorsement, likenesses or voice cloning.
+- See [SECURITY.md](SECURITY.md), [ARCHITECTURE.md](ARCHITECTURE.md), [LIMITATIONS.md](LIMITATIONS.md) for full boundaries.
 
----
-**Privacy:** never commit a real API key, locally saved portfolio state, contact email, personally identifying file path or unlicensed third-party data.
+**InvestOne is an educational research prototype and does not provide regulated investment advice.**
