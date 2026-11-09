@@ -1,0 +1,38 @@
+name: Verify Live External Financial Data
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/data.go'
+      - 'src/backup.go'
+      - 'src/proxy.go'
+      - 'src/live_data_integration_test.go'
+      - '.github/workflows/live-data-probe.yml'
+  workflow_dispatch:
+  schedule:
+    - cron: '35 7 * * 1-5'
+permissions:
+  contents: read
+jobs:
+  live-data-probe:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 9
+    env:
+      INVESTONE_LIVE_PROBE: '1'
+      SEC_CONTACT_EMAIL: ${{ secrets.SEC_CONTACT_EMAIL }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.23'
+      - name: Verify unmodified public market/news responses
+        working-directory: src
+        run: |
+          go test -count=1 -v -timeout 6m -run '^TestLiveFinancialProviders$' ./...
+      - name: Annotate result
+        if: always()
+        run: |
+          echo "### External provider test" >> "$GITHUB_STEP_SUMMARY"
+          echo "These tests require authentic HTTP responses from third-party sources." >> "$GITHUB_STEP_SUMMARY"
+          echo "A failed source is not replaced with synthetic data. Provider outages, rate limits and terms may affect results." >> "$GITHUB_STEP_SUMMARY"
+          echo "SEC requires an optional SEC_CONTACT_EMAIL repository secret from a real contact; no fabricated user agent is supplied." >> "$GITHUB_STEP_SUMMARY"
