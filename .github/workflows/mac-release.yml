@@ -1,0 +1,67 @@
+name: Build and Publish InvestOne Mac App
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - 'packaging/macos/**'
+      - '.github/workflows/mac-release.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  mac-arm64-release:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.23'
+      - name: Unit tests, static checks and race detection
+        working-directory: src
+        run: |
+          go test -count=1 ./...
+          go vet ./...
+          go test -race -count=1 ./...
+      - name: Compile native Apple Silicon application
+        working-directory: src
+        run: |
+          mkdir -p ../dist/InvestOne/InvestOne.app/Contents/MacOS
+          GOOS=darwin GOARCH=arm64 CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o ../dist/InvestOne/InvestOne.app/Contents/MacOS/InvestOne .
+          file ../dist/InvestOne/InvestOne.app/Contents/MacOS/InvestOne
+      - name: Package one-click launch and source-use guide
+        run: |
+          set -euo pipefail
+          cp packaging/macos/Info.plist dist/InvestOne/InvestOne.app/Contents/Info.plist
+          cp "packaging/macos/Open InvestOne.command" "dist/InvestOne/Open InvestOne.command"
+          cp "packaging/macos/Stop InvestOne.command" "dist/InvestOne/Stop InvestOne.command"
+          cp docs/DESKTOP_GUIDE.md dist/InvestOne/README.md
+          chmod +x "dist/InvestOne/InvestOne.app/Contents/MacOS/InvestOne"
+          chmod +x dist/InvestOne/*.command
+          printf 'APPL????' > dist/InvestOne/InvestOne.app/Contents/PkgInfo
+          cd dist
+          zip -q -r -9 InvestOne-V2-Mac-AppleSilicon.zip InvestOne
+          sha256sum InvestOne-V2-Mac-AppleSilicon.zip > InvestOne-V2-Mac-AppleSilicon.zip.sha256
+      - uses: actions/upload-artifact@v4
+        with:
+          name: InvestOne-V2-AppleSilicon-one-click
+          path: |
+            dist/InvestOne-V2-Mac-AppleSilicon.zip
+            dist/InvestOne-V2-Mac-AppleSilicon.zip.sha256
+          retention-days: 90
+      - name: Publish GitHub prerelease
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          TAG=v2.0.0-rc2
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" dist/InvestOne-V2-Mac-AppleSilicon.zip dist/InvestOne-V2-Mac-AppleSilicon.zip.sha256 --clobber
+          else
+            gh release create "$TAG" dist/InvestOne-V2-Mac-AppleSilicon.zip dist/InvestOne-V2-Mac-AppleSilicon.zip.sha256 \
+              --target "${GITHUB_SHA}" --prerelease --title "InvestOne V2 · Apple Silicon (RC)" \
+              --notes "Mac M-series one-click application from full Go source. Five real local backend modules. Yahoo/Stooq/Tencent/Google News/SEC endpoints are external third-party services: availability and API access are not guaranteed. See Actions: Verify Live External Financial Data for real-provider probe results. No API key or portfolio data is included."
+          fi
+          echo "### Mac release" >> "$GITHUB_STEP_SUMMARY"
+          echo "https://github.com/${GITHUB_REPOSITORY}/releases/tag/$TAG" >> "$GITHUB_STEP_SUMMARY"
