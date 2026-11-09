@@ -15,7 +15,7 @@ if not defined APPDATA (
   exit /b 1
 )
 if not exist "%APPDATA%\InvestOne\logs" mkdir "%APPDATA%\InvestOne\logs"
-powershell.exe -NoProfile -Command "$ErrorActionPreference='Stop'; Start-Process -FilePath $env:INVESTONE_BIN -ArgumentList '-open=true' -WorkingDirectory $env:ROOT -WindowStyle Hidden -RedirectStandardOutput (Join-Path $env:APPDATA 'InvestOne\logs\stdout.log') -RedirectStandardError (Join-Path $env:APPDATA 'InvestOne\logs\stderr.log')"
+powershell.exe -NoProfile -Command "$ErrorActionPreference='Stop'; Start-Process -FilePath $env:INVESTONE_BIN -ArgumentList '-open=true' -WorkingDirectory $env:ROOT -WindowStyle Hidden"
 if errorlevel 1 (
   echo Could not start InvestOne. Review logs in %%APPDATA%%\InvestOne\logs.
   pause
