@@ -119,9 +119,20 @@ func (c *cloudServer) handler() http.Handler {
 		w.Header().Set("Referrer-Policy", "no-referrer")
 		w.Header().Set("Cache-Control", "no-store")
 		w.Header().Set("Content-Security-Policy", "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'")
+		// Browsers correctly label navigation *from the GitHub Pages landing*
+		// as cross-site. Permit only a safe, top-level HTML navigation to
+		// the public landing/app routes. Keep cross-site API calls, embeds,
+		// resource requests and unsafe methods blocked (CSRF protection).
 		if r.Header.Get("Sec-Fetch-Site") == "cross-site" {
-			http.Error(w, "Cross-site request blocked", 403)
-			return
+			navigation := (r.Method == http.MethodGet || r.Method == http.MethodHead) &&
+				r.Header.Get("Sec-Fetch-Mode") == "navigate" &&
+				r.Header.Get("Sec-Fetch-Dest") == "document"
+			publicPage := r.URL.Path == "/" || r.URL.Path == "/landing" ||
+				r.URL.Path == "/app" || r.URL.Path == "/app/" || r.URL.Path == "/index.html"
+			if !navigation || !publicPage {
+				http.Error(w, "Cross-site request blocked", http.StatusForbidden)
+				return
+			}
 		}
 		if strings.HasPrefix(r.URL.Path, "/api/") {
 			if r.URL.Path == "/api/health" && r.Method == http.MethodGet {
