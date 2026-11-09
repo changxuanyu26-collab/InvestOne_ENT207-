@@ -5,6 +5,8 @@ on:
     paths:
       - 'docs/**'
       - 'scripts/test_interactive_demo.py'
+      - 'src/**'
+      - 'packaging/**'
       - '.github/workflows/pages.yml'
   workflow_dispatch:
 permissions:
@@ -40,6 +42,35 @@ jobs:
           python -m playwright install chromium
       - name: Smoke test five linked features and unchanged video reference
         run: python scripts/test_interactive_demo.py
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.23'
+      - name: Verify application before distribution
+        working-directory: src
+        run: |
+          go test -count=1 ./...
+          go vet ./...
+      - name: Package six downloadable desktop editions
+        shell: bash
+        run: |
+          set -euo pipefail
+          bash packaging/build-all.sh
+          mkdir -p docs/downloads
+          cp dist/InvestOne-v2.1.0-rc1-*.zip docs/downloads/
+          cp dist/SHA256SUMS.txt docs/downloads/
+          python3 - <<'PY'
+          from pathlib import Path
+          from hashlib import sha256
+          from zipfile import ZipFile
+          for p in sorted(Path('docs/downloads').glob('*.zip')):
+              with ZipFile(p) as z:
+                  assert z.testzip() is None
+                  paths = z.namelist()
+                  assert any(x.endswith('README.md') for x in paths)
+                  assert any(x.endswith('.command') or x.endswith('.cmd') or x.endswith('.sh') for x in paths)
+              print('Verified', p.name, p.stat().st_size, sha256(p.read_bytes()).hexdigest())
+          assert len(list(Path('docs/downloads').glob('*.zip'))) == 6
+          PY
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
