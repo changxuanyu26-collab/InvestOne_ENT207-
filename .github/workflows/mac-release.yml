@@ -40,7 +40,7 @@ jobs:
             case "$target" in
               darwin)
                 mkdir -p "$dir/InvestOne.app/Contents/MacOS"
-                GOOS=darwin GOARCH="$arch" CGO_ENABLED=0 go build -C src -trimpath -ldflags='-s -w' -o "$GITHUB_WORKSPACE/$dir/InvestOne.app/Contents/MacOS/InvestOne" .
+                GOOS=darwin GOARCH="$arch" CGO_ENABLED=0 go -C src build -trimpath -ldflags='-s -w' -o "$GITHUB_WORKSPACE/$dir/InvestOne.app/Contents/MacOS/InvestOne" .
                 cp packaging/macos/Info.plist "$dir/InvestOne.app/Contents/Info.plist"
                 printf 'APPL????' > "$dir/InvestOne.app/Contents/PkgInfo"
                 if [ "$arch" = "arm64" ]; then
@@ -52,11 +52,11 @@ jobs:
                 chmod +x "$dir/InvestOne.app/Contents/MacOS/InvestOne" "$dir/"*.command
                 ;;
               windows)
-                GOOS=windows GOARCH="$arch" CGO_ENABLED=0 go build -C src -trimpath -ldflags='-s -w' -o "$GITHUB_WORKSPACE/$dir/InvestOne.exe" .
+                GOOS=windows GOARCH="$arch" CGO_ENABLED=0 go -C src build -trimpath -ldflags='-s -w' -o "$GITHUB_WORKSPACE/$dir/InvestOne.exe" .
                 cp packaging/windows/*.cmd "$dir/"
                 ;;
               linux)
-                GOOS=linux GOARCH="$arch" CGO_ENABLED=0 go build -C src -trimpath -ldflags='-s -w' -o "$GITHUB_WORKSPACE/$dir/InvestOne" .
+                GOOS=linux GOARCH="$arch" CGO_ENABLED=0 go -C src build -trimpath -ldflags='-s -w' -o "$GITHUB_WORKSPACE/$dir/InvestOne" .
                 cp packaging/linux/*.sh "$dir/"
                 chmod +x "$dir/InvestOne" "$dir/"*.sh
                 ;;
