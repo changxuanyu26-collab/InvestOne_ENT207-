@@ -29,7 +29,15 @@ def run():
             browser=p.chromium.launch(headless=True,args=["--no-sandbox"])
             page=browser.new_page(viewport={"width":1440,"height":900})
             page.on("pageerror",lambda error:errors.append(str(error)))
-            page.goto(address,wait_until="load")
+            page.goto(address+"app/",wait_until="load")
+            # Root is a real product landing page, not the old synthetic demo.
+            landing=browser.new_page(viewport={"width":390,"height":844})
+            landing.goto(address,wait_until="load")
+            cta=landing.get_by_role("link",name="Try InvestOne live web app")
+            assert cta.count()==1
+            assert cta.get_attribute("href")=="https://investone-live-production.up.railway.app/app/"
+            assert landing.locator("h1").count()==1
+            landing.close()
             page.locator('#main-nav button').first.wait_for(timeout=12000)
             expected=["AI Investment Chatbot","Personalised Intelligence","Continuous Automation","Community Integration","Investor Digital Humans"]
             actual=page.locator("#main-nav .nav-text").all_text_contents()
@@ -69,7 +77,7 @@ def run():
 
             video=page.locator("#product-video")
             assert video.count()==1
-            assert video.locator("source").get_attribute("src")=="demo.mp4"
+            assert video.locator("source").get_attribute("src")=="../demo.mp4"
             page.locator("#open-video-top").click()
             assert "open" in page.locator("#video-dialog").get_attribute("class")
             page.locator("#close-video").click()
