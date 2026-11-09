@@ -50,6 +50,14 @@ func TestCloudLandingAndSessionIsolation(t *testing.T) {
 	if appPage.Code != 200 || !strings.Contains(appPage.Body.String(), "/app.js") {
 		t.Fatalf("App page %d", appPage.Code)
 	}
+	// Guests can see real provider-backed research without a login.
+	guest := cloudRequest(h, "GET", "/api/state", "")
+	if guest.Code != 200 {
+		t.Fatalf("Guest access: %d %s", guest.Code, guest.Body.String())
+	}
+	if !pickCookie(t, guest, "investone_session").Secure {
+		t.Fatal("Guest auth cookie must be secure")
+	}
 	loginPayload := `{"username":"RedBeanCoix","key":"key-visitor-a"}`
 	visitorA := cloudRequest(h, "POST", "/api/login", loginPayload)
 	if visitorA.Code != 200 {
