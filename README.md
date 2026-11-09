@@ -6,28 +6,30 @@
 
 *ENT207 · Quantitative Investment and Sector Allocation Strategies in Evolving Capital Markets*
 
-[**▶ Watch product film**](https://changxuanyu26-collab.github.io/InvestOne_ENT207-/?autoplay=1) · [**Try five-core interactive preview**](https://changxuanyu26-collab.github.io/InvestOne_ENT207-/) · [**⬇ Download Full App (Windows / Mac / Linux)**](https://github.com/changxuanyu26-collab/InvestOne_ENT207-/releases/tag/v2.1.0-rc1) · [**Full app source**](src/)
+[**▶ Watch product film**](https://changxuanyu26-collab.github.io/InvestOne_ENT207-/?autoplay=1) · [**Try five-core interactive preview**](https://changxuanyu26-collab.github.io/InvestOne_ENT207-/) · [**⬇ Download Full App (Windows / Mac / Linux)**](https://github.com/changxuanyu26-collab/InvestOne_ENT207-/actions/runs/42670737818/artifacts/13698277828) · [**Full app source**](src/)
 
 </div>
 
-## Download the actual application
+## Download the actual application — Windows, macOS, Linux
 
-**[⬇ Download InvestOne for your computer — Windows / macOS / Linux](https://github.com/changxuanyu26-collab/InvestOne_ENT207-/releases/tag/v2.1.0-rc1)**
+[**⬇ Download all six verified platform ZIPs (GitHub Actions artifact)**](https://github.com/changxuanyu26-collab/InvestOne_ENT207-/actions/runs/42670737818/artifacts/13698277828)
 
-| Computer | Recommended downloadable ZIP |
-|---|---|
-| **Windows Intel / AMD (x64)** | [**Download Windows x64**](https://github.com/changxuanyu26-collab/InvestOne_ENT207-/releases/download/v2.1.0-rc1/InvestOne-v2.1.0-rc1-Windows-x64.zip) |
-| Windows ARM (ARM64) | [Download Windows ARM64](https://github.com/changxuanyu26-collab/InvestOne_ENT207-/releases/download/v2.1.0-rc1/InvestOne-v2.1.0-rc1-Windows-ARM64.zip) |
-| **Mac with Apple M chip** | [**Download macOS Apple Silicon**](https://github.com/changxuanyu26-collab/InvestOne_ENT207-/releases/download/v2.1.0-rc1/InvestOne-v2.1.0-rc1-Mac-AppleSilicon.zip) |
-| Mac with Intel processor | [Download macOS Intel](https://github.com/changxuanyu26-collab/InvestOne_ENT207-/releases/download/v2.1.0-rc1/InvestOne-v2.1.0-rc1-Mac-Intel.zip) |
-| Linux Intel / AMD (x64) | [Download Linux x64](https://github.com/changxuanyu26-collab/InvestOne_ENT207-/releases/download/v2.1.0-rc1/InvestOne-v2.1.0-rc1-Linux-x64.zip) |
-| Linux ARM64 | [Download Linux ARM64](https://github.com/changxuanyu26-collab/InvestOne_ENT207-/releases/download/v2.1.0-rc1/InvestOne-v2.1.0-rc1-Linux-ARM64.zip) |
+The GitHub Actions archive contains six individually named ZIPs and a `SHA256SUMS.txt` checksum file. Choose the ZIP matching your computer:
 
-Extract the ZIP and double-click `Open InvestOne.cmd` on Windows or `Open InvestOne.command` on Mac. Linux users launch `Open InvestOne.sh` (some desktop environments require allowing execution first). This runs the complete local Go backend and automatically opens `http://127.0.0.1:18791`, without Python, Node.js or Docker. Log in as **红豆薏米水** and enter your own Highway API key.
+| Operating system and CPU | Package inside archive | Launch after extraction |
+|---|---|---|
+| **Windows Intel / AMD x64** | **InvestOne-v2.1.0-rc1-Windows-x64.zip** | `Open InvestOne.cmd` |
+| Windows ARM64 | InvestOne-v2.1.0-rc1-Windows-ARM64.zip | `Open InvestOne.cmd` |
+| **Mac Apple Silicon (M series)** | **InvestOne-v2.1.0-rc1-Mac-AppleSilicon.zip** | `Open InvestOne.command` |
+| Mac Intel | InvestOne-v2.1.0-rc1-Mac-Intel.zip | `Open InvestOne.command` |
+| Linux x64 | InvestOne-v2.1.0-rc1-Linux-x64.zip | `Open InvestOne.sh` |
+| Linux ARM64 | InvestOne-v2.1.0-rc1-Linux-ARM64.zip | `Open InvestOne.sh` |
 
-**For the group member with Intel Core i7-14650HX + RTX 4060 Laptop + 64-bit Windows x64: choose Windows x64.** No NVIDIA GPU setup is needed to access external financial data and hosted AI. The download remains architecture-specific; Windows ARM64 is for ARM PCs, not Intel CPUs.
+**For the team member with Intel Core i7-14650HX and 64-bit Windows, choose Windows-x64.** The GeForce RTX 4060 is not necessary for cloud AI inference or financial market data requests.
 
-Read the [complete multi-platform instructions](docs/MULTIPLATFORM.md). The application bundles provider adapters for real external financial feeds but depends on each provider's uptime, network access and license conditions. The desktop binaries are not code signed.
+This is an Actions artifact rather than a permanent GitHub Release: GitHub sign-in may be needed and the build artifact is retained for 90 days. **The GitHub Release publishing action currently returns HTTP 403 due to repository workflow permissions**, so do not treat direct Release asset URLs as available until authorization is fixed. Read [platform instructions](docs/MULTIPLATFORM.md).
+
+All versions contain the same local Go backend and web UI. Login with **红豆薏米水** plus your own Highway API Key; data providers and paid AI access require an external network and working provider credentials. Binaries are not notarized or signed.
 
 ## Two deliverables — clearly distinguished
 
