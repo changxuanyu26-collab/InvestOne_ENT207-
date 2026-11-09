@@ -56,6 +56,6 @@ try:
     response=a.post("/api/chat",{"message":"Summarize NVDA","symbol":"NVDA","persona":"assistant","include_community":False})
     raise AssertionError("Unexpected paid AI success without a key: "+str(response)[:100])
 except urllib.error.HTTPError as ex:
-    assert ex.code in (400,401,422),(ex.code,ex.read()[:500])
+    assert ex.code in (400,401,422,502) and b"Highway API key" in ex.read(),ex.code
 print("AI-KEY GUARD PASS (no paid AI request made)",flush=True)
 print("VERIFIED: REAL BACKEND, ISOLATED VISITORS, MARKET DATA AND NEWS",flush=True)
