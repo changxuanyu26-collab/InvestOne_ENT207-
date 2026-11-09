@@ -4,6 +4,7 @@ on:
     branches: [main]
     paths:
       - 'scripts/cloud_live_smoke.py'
+      - 'scripts/cloud_browser_smoke.py'
       - '.github/workflows/cloud-live-smoke.yml'
   workflow_dispatch:
 permissions:
@@ -14,6 +15,14 @@ jobs:
     timeout-minutes: 8
     steps:
       - uses: actions/checkout@v4
+      - name: Install Playwright Chromium
+        run: |
+          python3 -m pip install playwright==1.56.0
+          python3 -m playwright install chromium
+      - name: Validate desktop and mobile live web UI, real navigation and avatar controls
+        env:
+          INVESTONE_LIVE_URL: https://investone-live-production.up.railway.app
+        run: python3 scripts/cloud_browser_smoke.py
       - name: Test actual deployed HTTPS endpoint, distinct visitors, real financial data and news
         env:
           INVESTONE_LIVE_URL: https://investone-live-production.up.railway.app
