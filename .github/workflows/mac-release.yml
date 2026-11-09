@@ -1,4 +1,4 @@
-name: Build and Release InvestOne for Windows macOS Linux
+name: Build InvestOne for Windows Mac and Linux
 on:
   push:
     branches: [main]
@@ -9,12 +9,9 @@ on:
       - '.github/workflows/mac-release.yml'
   workflow_dispatch:
 permissions:
-  contents: write
-concurrency:
-  group: investone-release
-  cancel-in-progress: false
+  contents: read
 jobs:
-  build-and-publish:
+  build:
     runs-on: ubuntu-24.04
     timeout-minutes: 25
     steps:
@@ -22,117 +19,55 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version: '1.23'
-      - name: Unit tests and static checks
+      - name: Unit tests and static analysis
         working-directory: src
         run: |
           go test -count=1 ./...
           go vet ./...
           go test -race -count=1 ./...
-      - name: Build all six native Go targets and one-click launchers
-        shell: bash
-        run: |
-          set -euo pipefail
-          mkdir -p dist
-          while read -r target arch label; do
-            dir="dist/stage/$label/InvestOne"
-            mkdir -p "$dir"
-            cp docs/MULTIPLATFORM.md "$dir/README.md"
-            case "$target" in
-              darwin)
-                mkdir -p "$dir/InvestOne.app/Contents/MacOS"
-                GOOS=darwin GOARCH="$arch" CGO_ENABLED=0 go -C src build -trimpath -ldflags='-s -w' -o "$GITHUB_WORKSPACE/$dir/InvestOne.app/Contents/MacOS/InvestOne" .
-                cp packaging/macos/Info.plist "$dir/InvestOne.app/Contents/Info.plist"
-                printf 'APPL????' > "$dir/InvestOne.app/Contents/PkgInfo"
-                if [ "$arch" = "arm64" ]; then
-                  cp "packaging/macos/Open InvestOne.command" "$dir/Open InvestOne.command"
-                else
-                  cp "packaging/macos/Open InvestOne Intel.command" "$dir/Open InvestOne.command"
-                fi
-                cp "packaging/macos/Stop InvestOne.command" "$dir/Stop InvestOne.command"
-                chmod +x "$dir/InvestOne.app/Contents/MacOS/InvestOne" "$dir/"*.command
-                ;;
-              windows)
-                GOOS=windows GOARCH="$arch" CGO_ENABLED=0 go -C src build -trimpath -ldflags='-s -w' -o "$GITHUB_WORKSPACE/$dir/InvestOne.exe" .
-                cp packaging/windows/*.cmd "$dir/"
-                ;;
-              linux)
-                GOOS=linux GOARCH="$arch" CGO_ENABLED=0 go -C src build -trimpath -ldflags='-s -w' -o "$GITHUB_WORKSPACE/$dir/InvestOne" .
-                cp packaging/linux/*.sh "$dir/"
-                chmod +x "$dir/InvestOne" "$dir/"*.sh
-                ;;
-              *) echo "Unknown OS: $target"; exit 1 ;;
-            esac
-            (cd "dist/stage/$label"; zip -q -r -9 "$GITHUB_WORKSPACE/dist/InvestOne-v2.1.0-rc1-$label.zip" InvestOne)
-            file "$dir/"* 2>/dev/null | head -n 5
-            unzip -tqq "dist/InvestOne-v2.1.0-rc1-$label.zip"
-          done <<'TARGETS'
-          darwin arm64 Mac-AppleSilicon
-          darwin amd64 Mac-Intel
-          windows amd64 Windows-x64
-          windows arm64 Windows-ARM64
-          linux amd64 Linux-x64
-          linux arm64 Linux-ARM64
-          TARGETS
-          (cd dist; sha256sum InvestOne-v2.1.0-rc1-*.zip > SHA256SUMS.txt)
-          ls -lah dist/*.zip dist/SHA256SUMS.txt
-      - uses: actions/upload-artifact@v4
-        with:
-          name: InvestOne-cross-platform-v2.1.0-rc1
-          path: |
-            dist/InvestOne-v2.1.0-rc1-*.zip
-            dist/SHA256SUMS.txt
-          retention-days: 90
-      - name: Upload Windows-x64 downloadable ZIP
+      - name: Build and validate six platform ZIPs
+        run: bash packaging/build-all.sh
+      - name: Download package Windows-x64
         uses: actions/upload-artifact@v4
         with:
           name: InvestOne-v2.1.0-rc1-Windows-x64
           path: dist/InvestOne-v2.1.0-rc1-Windows-x64.zip
           retention-days: 90
-      - name: Upload Windows-ARM64 downloadable ZIP
+      - name: Download package Windows-ARM64
         uses: actions/upload-artifact@v4
         with:
           name: InvestOne-v2.1.0-rc1-Windows-ARM64
           path: dist/InvestOne-v2.1.0-rc1-Windows-ARM64.zip
           retention-days: 90
-      - name: Upload Mac-AppleSilicon downloadable ZIP
+      - name: Download package Mac-AppleSilicon
         uses: actions/upload-artifact@v4
         with:
           name: InvestOne-v2.1.0-rc1-Mac-AppleSilicon
           path: dist/InvestOne-v2.1.0-rc1-Mac-AppleSilicon.zip
           retention-days: 90
-      - name: Upload Mac-Intel downloadable ZIP
+      - name: Download package Mac-Intel
         uses: actions/upload-artifact@v4
         with:
           name: InvestOne-v2.1.0-rc1-Mac-Intel
           path: dist/InvestOne-v2.1.0-rc1-Mac-Intel.zip
           retention-days: 90
-      - name: Upload Linux-x64 downloadable ZIP
+      - name: Download package Linux-x64
         uses: actions/upload-artifact@v4
         with:
           name: InvestOne-v2.1.0-rc1-Linux-x64
           path: dist/InvestOne-v2.1.0-rc1-Linux-x64.zip
           retention-days: 90
-      - name: Upload Linux-ARM64 downloadable ZIP
+      - name: Download package Linux-ARM64
         uses: actions/upload-artifact@v4
         with:
           name: InvestOne-v2.1.0-rc1-Linux-ARM64
           path: dist/InvestOne-v2.1.0-rc1-Linux-ARM64.zip
           retention-days: 90
-      - name: Publish multi-platform GitHub prerelease (if repository policy permits)
-        continue-on-error: true
-        env:
-          GH_TOKEN: ${{ github.token }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          TAG="v2.1.0-rc1"
-          TITLE="InvestOne V2.1 · Windows Mac Linux"
-          NOTE="Download the ZIP for your CPU architecture; extract it, then double-click Open InvestOne. Windows Intel/AMD x64 users: Windows-x64. macOS M-series: Mac-AppleSilicon. macOS Intel: Mac-Intel. Windows ARM64 and Linux variants also provided. Each package bundles the self-contained local Go backend and browser UI, without API keys or personal data. External providers, paid AI calls and optional digital human voice/avatars require network/configuration and have separate verification limits. See docs/MULTIPLATFORM.md for instructions. Binaries are not code signed."
-          if gh release view "$TAG" >/dev/null 2>&1; then
-            gh release upload "$TAG" dist/InvestOne-v2.1.0-rc1-*.zip dist/SHA256SUMS.txt --clobber
-            gh release edit "$TAG" --title "$TITLE" --notes "$NOTE" --prerelease
-          else
-            gh release create "$TAG" dist/InvestOne-v2.1.0-rc1-*.zip dist/SHA256SUMS.txt --target "$GITHUB_SHA" --prerelease --title "$TITLE" --notes "$NOTE"
-          fi
-          echo "### InvestOne downloads" >> "$GITHUB_STEP_SUMMARY"
-          echo "Individual Windows, macOS and Linux ZIPs are also downloadable from this workflow run\x27s Artifacts panel (GitHub sign-in may be required)." >> "$GITHUB_STEP_SUMMARY"
+      - name: Checksums and all-platform download
+        uses: actions/upload-artifact@v4
+        with:
+          name: InvestOne-v2.1.0-rc1-All-Platforms
+          path: |
+            dist/InvestOne-v2.1.0-rc1-*.zip
+            dist/SHA256SUMS.txt
+          retention-days: 90
