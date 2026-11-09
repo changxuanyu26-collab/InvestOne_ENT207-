@@ -1,0 +1,71 @@
+name: Import InvestOne V2 Source
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'transfer/InvestOne_V2_source.tar.gz.base64'
+      - '.github/workflows/import-v2-source.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  import-source:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.23'
+      - name: Extract and validate source bundle
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import base64, hashlib, io, pathlib, tarfile
+          base=pathlib.Path('transfer/InvestOne_V2_source.tar.gz.base64').read_text().strip()
+          payload=base64.b64decode(base,validate=True)
+          sha=hashlib.sha256(payload).hexdigest()
+          expected='40669238f411792a8171568b194ea75fb179330b5d235f620762ed2262cdfd45'
+          if sha != expected:
+              raise SystemExit('Source archive checksum mismatch: '+sha)
+          with tarfile.open(fileobj=io.BytesIO(payload), mode='r:gz') as tar:
+              members=tar.getmembers()
+              if len(members)!=17:
+                  raise SystemExit('Expected exactly 17 source files')
+              for m in members:
+                  p=pathlib.PurePosixPath(m.name)
+                  if not m.isfile() or p.is_absolute() or '..' in p.parts or p.parts[0]!='src':
+                      raise SystemExit('Refused invalid source archive member '+m.name)
+              tar.extractall('.',filter='data')
+          print('Imported',len(members),'safe source files; SHA256',sha)
+          PY
+      - name: Run full Go tests and vet
+        working-directory: src
+        run: |
+          go test -count=1 ./...
+          go vet ./...
+      - name: Cross-compile macOS Apple Silicon app
+        working-directory: src
+        run: |
+          GOOS=darwin GOARCH=arm64 CGO_ENABLED=0 go build -trimpath -o ../InvestOne-arm64 .
+          file ../InvestOne-arm64
+      - uses: actions/upload-artifact@v4
+        with:
+          name: InvestOne-V2-ARM64-build-verified
+          path: InvestOne-arm64
+          retention-days: 30
+      - name: Commit full inspectable application source
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/
+          if git diff --cached --quiet; then
+            echo 'Full Go source already current.'
+          else
+            git commit -m "feat: publish complete local InvestOne V2 app, data providers, AI, backtesting, monitoring and tests"
+            git push origin HEAD:main
+          fi
