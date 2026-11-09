@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"os"
 	"net/http"
 	"net/url"
 	"sort"
@@ -70,7 +71,7 @@ func (a *App) api(w http.ResponseWriter, r *http.Request) {
 			a.key = v.Key
 		}
 		a.mu.Unlock()
-		http.SetCookie(w, &http.Cookie{Name: "investone_session", Value: token, Path: "/", HttpOnly: true, SameSite: http.SameSiteStrictMode, MaxAge: 7 * 86400})
+		http.SetCookie(w, &http.Cookie{Name: "investone_session", Value: token, Path: "/", HttpOnly: true, SameSite: http.SameSiteStrictMode, Secure: os.Getenv("INVESTONE_CLOUD")=="1", MaxAge: 7 * 86400})
 		send(w, 200, map[string]any{"ok": true, "ai_ready": a.getKey() != ""})
 		return
 	}
@@ -142,7 +143,7 @@ func (a *App) api(w http.ResponseWriter, r *http.Request) {
 		a.sessions = map[string]time.Time{}
 		a.key = ""
 		a.mu.Unlock()
-		http.SetCookie(w, &http.Cookie{Name: "investone_session", Value: "", Path: "/", MaxAge: -1, HttpOnly: true, SameSite: http.SameSiteStrictMode})
+		http.SetCookie(w, &http.Cookie{Name: "investone_session", Value: "", Path: "/", MaxAge: -1, HttpOnly: true, Secure: os.Getenv("INVESTONE_CLOUD")=="1", SameSite: http.SameSiteStrictMode})
 		send(w, 200, map[string]bool{"ok": true})
 		return
 	}
