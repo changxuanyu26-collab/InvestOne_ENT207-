@@ -1,68 +1,101 @@
-name: Build and Publish InvestOne Mac App
+name: Build and Release InvestOne for Windows macOS Linux
 on:
   push:
     branches: [main]
     paths:
       - 'src/**'
-      - 'packaging/macos/**'
-      - 'docs/DESKTOP_GUIDE.md'
+      - 'packaging/**'
+      - 'docs/MULTIPLATFORM.md'
       - '.github/workflows/mac-release.yml'
   workflow_dispatch:
 permissions:
   contents: write
+concurrency:
+  group: investone-release
+  cancel-in-progress: false
 jobs:
-  mac-arm64-release:
+  build-and-publish:
     runs-on: ubuntu-24.04
-    timeout-minutes: 12
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
           go-version: '1.23'
-      - name: Unit tests, static checks and race detection
+      - name: Unit tests and static checks
         working-directory: src
         run: |
           go test -count=1 ./...
           go vet ./...
           go test -race -count=1 ./...
-      - name: Compile native Apple Silicon application
-        working-directory: src
-        run: |
-          mkdir -p ../dist/InvestOne/InvestOne.app/Contents/MacOS
-          GOOS=darwin GOARCH=arm64 CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o ../dist/InvestOne/InvestOne.app/Contents/MacOS/InvestOne .
-          file ../dist/InvestOne/InvestOne.app/Contents/MacOS/InvestOne
-      - name: Package one-click launch and source-use guide
+      - name: Build all six native Go targets and one-click launchers
+        shell: bash
         run: |
           set -euo pipefail
-          cp packaging/macos/Info.plist dist/InvestOne/InvestOne.app/Contents/Info.plist
-          cp "packaging/macos/Open InvestOne.command" "dist/InvestOne/Open InvestOne.command"
-          cp "packaging/macos/Stop InvestOne.command" "dist/InvestOne/Stop InvestOne.command"
-          cp docs/DESKTOP_GUIDE.md dist/InvestOne/README.md
-          chmod +x "dist/InvestOne/InvestOne.app/Contents/MacOS/InvestOne"
-          chmod +x dist/InvestOne/*.command
-          printf 'APPL????' > dist/InvestOne/InvestOne.app/Contents/PkgInfo
-          cd dist
-          zip -q -r -9 InvestOne-V2-Mac-AppleSilicon.zip InvestOne
-          sha256sum InvestOne-V2-Mac-AppleSilicon.zip > InvestOne-V2-Mac-AppleSilicon.zip.sha256
+          mkdir -p dist
+          while read -r target arch label; do
+            dir="dist/stage/$label/InvestOne"
+            mkdir -p "$dir"
+            cp docs/MULTIPLATFORM.md "$dir/README.md"
+            case "$target" in
+              darwin)
+                mkdir -p "$dir/InvestOne.app/Contents/MacOS"
+                GOOS=darwin GOARCH="$arch" CGO_ENABLED=0 go build -C src -trimpath -ldflags='-s -w' -o "$GITHUB_WORKSPACE/$dir/InvestOne.app/Contents/MacOS/InvestOne" .
+                cp packaging/macos/Info.plist "$dir/InvestOne.app/Contents/Info.plist"
+                printf 'APPL????' > "$dir/InvestOne.app/Contents/PkgInfo"
+                if [ "$arch" = "arm64" ]; then
+                  cp "packaging/macos/Open InvestOne.command" "$dir/Open InvestOne.command"
+                else
+                  cp "packaging/macos/Open InvestOne Intel.command" "$dir/Open InvestOne.command"
+                fi
+                cp "packaging/macos/Stop InvestOne.command" "$dir/Stop InvestOne.command"
+                chmod +x "$dir/InvestOne.app/Contents/MacOS/InvestOne" "$dir/"*.command
+                ;;
+              windows)
+                GOOS=windows GOARCH="$arch" CGO_ENABLED=0 go build -C src -trimpath -ldflags='-s -w' -o "$GITHUB_WORKSPACE/$dir/InvestOne.exe" .
+                cp packaging/windows/*.cmd "$dir/"
+                ;;
+              linux)
+                GOOS=linux GOARCH="$arch" CGO_ENABLED=0 go build -C src -trimpath -ldflags='-s -w' -o "$GITHUB_WORKSPACE/$dir/InvestOne" .
+                cp packaging/linux/*.sh "$dir/"
+                chmod +x "$dir/InvestOne" "$dir/"*.sh
+                ;;
+              *) echo "Unknown OS: $target"; exit 1 ;;
+            esac
+            (cd "dist/stage/$label"; zip -q -r -9 "$GITHUB_WORKSPACE/dist/InvestOne-v2.1.0-rc1-$label.zip" InvestOne)
+            file "$dir/"* 2>/dev/null | head -n 5
+            unzip -tqq "dist/InvestOne-v2.1.0-rc1-$label.zip"
+          done <<'TARGETS'
+          darwin arm64 Mac-AppleSilicon
+          darwin amd64 Mac-Intel
+          windows amd64 Windows-x64
+          windows arm64 Windows-ARM64
+          linux amd64 Linux-x64
+          linux arm64 Linux-ARM64
+          TARGETS
+          (cd dist; sha256sum InvestOne-v2.1.0-rc1-*.zip > SHA256SUMS.txt)
+          ls -lah dist/*.zip dist/SHA256SUMS.txt
       - uses: actions/upload-artifact@v4
         with:
-          name: InvestOne-V2-AppleSilicon-one-click
+          name: InvestOne-cross-platform-v2.1.0-rc1
           path: |
-            dist/InvestOne-V2-Mac-AppleSilicon.zip
-            dist/InvestOne-V2-Mac-AppleSilicon.zip.sha256
+            dist/InvestOne-v2.1.0-rc1-*.zip
+            dist/SHA256SUMS.txt
           retention-days: 90
-      - name: Publish GitHub prerelease
+      - name: Publish multi-platform GitHub prerelease
         env:
           GH_TOKEN: ${{ github.token }}
+        shell: bash
         run: |
           set -euo pipefail
-          TAG=v2.0.0-rc2
+          TAG="v2.1.0-rc1"
+          TITLE="InvestOne V2.1 · Windows Mac Linux"
+          NOTE="Download the ZIP for your CPU architecture; extract it, then double-click Open InvestOne. Windows Intel/AMD x64 users: Windows-x64. macOS M-series: Mac-AppleSilicon. macOS Intel: Mac-Intel. Windows ARM64 and Linux variants also provided. Each package bundles the self-contained local Go backend and browser UI, without API keys or personal data. External providers, paid AI calls and optional digital human voice/avatars require network/configuration and have separate verification limits. See docs/MULTIPLATFORM.md for instructions. Binaries are not code signed."
           if gh release view "$TAG" >/dev/null 2>&1; then
-            gh release upload "$TAG" dist/InvestOne-V2-Mac-AppleSilicon.zip dist/InvestOne-V2-Mac-AppleSilicon.zip.sha256 --clobber
+            gh release upload "$TAG" dist/InvestOne-v2.1.0-rc1-*.zip dist/SHA256SUMS.txt --clobber
+            gh release edit "$TAG" --title "$TITLE" --notes "$NOTE" --prerelease
           else
-            gh release create "$TAG" dist/InvestOne-V2-Mac-AppleSilicon.zip dist/InvestOne-V2-Mac-AppleSilicon.zip.sha256 \
-              --target "${GITHUB_SHA}" --prerelease --title "InvestOne V2 · Apple Silicon (RC)" \
-              --notes "Mac M-series one-click application from full Go source. Five real local backend modules. Yahoo/Stooq/Tencent/Google News/SEC endpoints are external third-party services: availability and API access are not guaranteed. See Actions: Verify Live External Financial Data for real-provider probe results. No API key or portfolio data is included."
+            gh release create "$TAG" dist/InvestOne-v2.1.0-rc1-*.zip dist/SHA256SUMS.txt --target "$GITHUB_SHA" --prerelease --title "$TITLE" --notes "$NOTE"
           fi
-          echo "### Mac release" >> "$GITHUB_STEP_SUMMARY"
-          echo "https://github.com/${GITHUB_REPOSITORY}/releases/tag/$TAG" >> "$GITHUB_STEP_SUMMARY"
+          echo "### InvestOne downloads" >> "$GITHUB_STEP_SUMMARY"
+          echo "https://github.com/$GITHUB_REPOSITORY/releases/tag/$TAG" >> "$GITHUB_STEP_SUMMARY"
