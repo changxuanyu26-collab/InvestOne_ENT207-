@@ -1,6 +1,6 @@
 # InvestOne · Download for your computer
 
-InvestOne runs a private Go server on **127.0.0.1:18791** and opens its web interface in your default browser. All six release ZIPs use the same core Go application; no Python, Node.js, CUDA, or Docker is required to use the app.
+InvestOne runs a private Go server on **127.0.0.1:18791** and opens its web interface in your default browser. All six downloadable ZIPs use the same core Go application; no Python, Node.js, CUDA, or Docker is required to use the app.
 
 ## Choose the correct download
 
@@ -16,7 +16,7 @@ InvestOne runs a private Go server on **127.0.0.1:18791** and opens its web inte
 **Example team member:** Intel Core i7-14650HX, 16 GB RAM, GeForce RTX 4060 Laptop, 64-bit Windows on x64: choose **Windows-x64**. No GPU is needed for market data retrieval or calling cloud AI APIs.
 
 ## First launch
-1. Download the ZIP for your OS and architecture from the GitHub Release assets list.
+1. Visit https://changxuanyu26-collab.github.io/InvestOne_ENT207-/downloads/ and click the button for your system and architecture. Each button downloads only its own ZIP.
 2. Extract the *whole* ZIP to a normal folder.
 3. Double-click the platform's **Open InvestOne** launcher (Linux may require making it executable once). Keep the application files together.
 4. The localhost web app opens. Enter **红豆薏米水** (or **RedBeanCoix**) plus **your own Highway API Key**.
@@ -32,7 +32,7 @@ The Windows and Linux launchers open the URL `http://127.0.0.1:18791`. If the br
 API keys are held in memory during the local session. Never commit or share them. Login alias is a **local convenience** rather than secure public-web authentication. Do **not** expose port 18791 to the internet.
 
 ## Platform protections
-The binaries are presently **not code signed or notarized**. Operating systems may display security warnings, especially on the first launch. Run only if you trust the published GitHub release and its checksum. Release ZIP checksums are in `SHA256SUMS.txt` on the same Release page.
+The binaries are presently **not code signed or notarized**. Operating systems may display security warnings, especially on the first launch. Run only if you trust the published GitHub release and its checksum. Public download checksums are at https://changxuanyu26-collab.github.io/InvestOne_ENT207-/downloads/SHA256SUMS.txt.
 
 ## Important capability boundaries
 - The public GitHub Pages interactive preview is a synthetic demonstration.
