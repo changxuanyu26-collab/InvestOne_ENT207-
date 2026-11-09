@@ -82,7 +82,44 @@ jobs:
             dist/InvestOne-v2.1.0-rc1-*.zip
             dist/SHA256SUMS.txt
           retention-days: 90
-      - name: Publish multi-platform GitHub prerelease
+      - name: Upload Windows-x64 downloadable ZIP
+        uses: actions/upload-artifact@v4
+        with:
+          name: InvestOne-v2.1.0-rc1-Windows-x64
+          path: dist/InvestOne-v2.1.0-rc1-Windows-x64.zip
+          retention-days: 90
+      - name: Upload Windows-ARM64 downloadable ZIP
+        uses: actions/upload-artifact@v4
+        with:
+          name: InvestOne-v2.1.0-rc1-Windows-ARM64
+          path: dist/InvestOne-v2.1.0-rc1-Windows-ARM64.zip
+          retention-days: 90
+      - name: Upload Mac-AppleSilicon downloadable ZIP
+        uses: actions/upload-artifact@v4
+        with:
+          name: InvestOne-v2.1.0-rc1-Mac-AppleSilicon
+          path: dist/InvestOne-v2.1.0-rc1-Mac-AppleSilicon.zip
+          retention-days: 90
+      - name: Upload Mac-Intel downloadable ZIP
+        uses: actions/upload-artifact@v4
+        with:
+          name: InvestOne-v2.1.0-rc1-Mac-Intel
+          path: dist/InvestOne-v2.1.0-rc1-Mac-Intel.zip
+          retention-days: 90
+      - name: Upload Linux-x64 downloadable ZIP
+        uses: actions/upload-artifact@v4
+        with:
+          name: InvestOne-v2.1.0-rc1-Linux-x64
+          path: dist/InvestOne-v2.1.0-rc1-Linux-x64.zip
+          retention-days: 90
+      - name: Upload Linux-ARM64 downloadable ZIP
+        uses: actions/upload-artifact@v4
+        with:
+          name: InvestOne-v2.1.0-rc1-Linux-ARM64
+          path: dist/InvestOne-v2.1.0-rc1-Linux-ARM64.zip
+          retention-days: 90
+      - name: Publish multi-platform GitHub prerelease (if repository policy permits)
+        continue-on-error: true
         env:
           GH_TOKEN: ${{ github.token }}
         shell: bash
@@ -98,4 +135,4 @@ jobs:
             gh release create "$TAG" dist/InvestOne-v2.1.0-rc1-*.zip dist/SHA256SUMS.txt --target "$GITHUB_SHA" --prerelease --title "$TITLE" --notes "$NOTE"
           fi
           echo "### InvestOne downloads" >> "$GITHUB_STEP_SUMMARY"
-          echo "https://github.com/$GITHUB_REPOSITORY/releases/tag/$TAG" >> "$GITHUB_STEP_SUMMARY"
+          echo "Individual Windows, macOS and Linux ZIPs are also downloadable from this workflow run\x27s Artifacts panel (GitHub sign-in may be required)." >> "$GITHUB_STEP_SUMMARY"
