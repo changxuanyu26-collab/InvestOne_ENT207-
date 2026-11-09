@@ -158,6 +158,16 @@ func (c *cloudServer) handler() http.Handler {
 				fail(w, 429, errors.New("Too many requests; try again shortly"))
 				return
 			}
+			// A first-time visitor can explore real financial data without an
+			// account. Paid AI research still requires their own API key.
+			if r.URL.Path == "/api/state" && r.Method == http.MethodGet && !s.app.authorized(r) {
+				token := id()
+				s.app.mu.Lock()
+				s.app.sessions[token] = time.Now().Add(7 * 24 * time.Hour)
+				s.app.mu.Unlock()
+				http.SetCookie(w, &http.Cookie{Name: "investone_session", Value: token, Path: "/", HttpOnly: true, Secure: true, SameSite: http.SameSiteStrictMode, MaxAge: 7 * 86400})
+				r.AddCookie(&http.Cookie{Name: "investone_session", Value: token})
+			}
 			s.app.api(w, r)
 			return
 		}
