@@ -142,6 +142,7 @@ func main() {
 		fmt.Println("InvestOne", Version, runtime.GOOS, runtime.GOARCH)
 		return
 	}
+	if os.Getenv("INVESTONE_CLOUD")=="1" { runCloud(); return }
 	host, _, e := net.SplitHostPort(*addr)
 	if e != nil || host != "127.0.0.1" {
 		log.Fatal("Only localhost (127.0.0.1) binding is allowed")
@@ -191,4 +192,16 @@ func main() {
 	if e = server.Serve(l); e != nil && e != http.ErrServerClosed {
 		log.Fatal(e)
 	}
+}
+
+func runCloud(){
+ port:=os.Getenv("PORT");if port==""{port="8080"}
+ for _,v:=range port{if v<'0'||v>'9'{log.Fatal("Invalid PORT")}}
+ dir:=os.Getenv("INVESTONE_DATA_DIR");if dir==""{dir="/data/users"}
+ ctx,stop:=signal.NotifyContext(context.Background(),os.Interrupt,syscall.SIGTERM);defer stop()
+ cloud,e:=newCloudServer(ctx,dir);if e!=nil{log.Fatal(e)}
+ server:=&http.Server{Addr:":"+port,Handler:cloud.handler(),ReadHeaderTimeout:5*time.Second,ReadTimeout:25*time.Second,WriteTimeout:330*time.Second,IdleTimeout:60*time.Second}
+ go func(){<-ctx.Done();done,cancel:=context.WithTimeout(context.Background(),10*time.Second);defer cancel();_ =server.Shutdown(done)}()
+ log.Printf("InvestOne %s cloud service listening on port %s",Version,port)
+ if e=server.ListenAndServe();e!=nil && e!=http.ErrServerClosed{log.Fatal(e)}
 }
