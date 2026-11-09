@@ -5,6 +5,7 @@ on:
     paths:
       - 'src/**'
       - 'packaging/macos/**'
+      - 'docs/DESKTOP_GUIDE.md'
       - '.github/workflows/mac-release.yml'
   workflow_dispatch:
 permissions:
