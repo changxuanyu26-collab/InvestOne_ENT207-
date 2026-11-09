@@ -17,8 +17,8 @@ import (
 
 // Native text extraction only. The uploaded bytes stay local; no OCR or cloud upload.
 func (a *App) pdfText(w http.ResponseWriter, r *http.Request) {
-	if runtime.GOOS != "darwin" {
-		fail(w, 501, errors.New("PDF text extraction uses the macOS PDFKit framework; unavailable outside macOS."))
+	if runtime.GOOS != "darwin" && runtime.GOOS != "linux" {
+		fail(w, 501, errors.New("PDF text extraction is supported on macOS and Linux servers."))
 		return
 	}
 	r.Body = http.MaxBytesReader(w, r.Body, 12*1024*1024)
@@ -55,15 +55,21 @@ func (a *App) pdfText(w http.ResponseWriter, r *http.Request) {
 	script := `ObjC.import('Foundation'); ObjC.import('PDFKit'); function run(argv) { var doc = $.PDFDocument.alloc.initWithURL($.NSURL.fileURLWithPath(argv[0])); var count = Number(doc.pageCount); if (!count || count > 500) throw new Error('Invalid PDF or more than 500 pages'); var out = ''; for (var i = 0; i < count; i++) { var page = doc.pageAtIndex(i); var text = ObjC.unwrap(page.string); if (text) out += '\n[Page ' + (i+1) + ']\n' + text; if(out.length > 400000) throw new Error('Text exceeds 400000 characters'); } return out; }`
 	ctx, cancel := context.WithTimeout(r.Context(), 30*time.Second)
 	defer cancel()
-	out, e := exec.CommandContext(ctx, "/usr/bin/osascript", "-l", "JavaScript", "-e", script, f.Name()).Output()
+	var out []byte
+ if runtime.GOOS=="linux" {
+  out,e=exec.CommandContext(ctx,"pdftotext","-layout","-nopgbrk",f.Name(),"-").Output()
+ }else{
+  out,e=exec.CommandContext(ctx,"/usr/bin/osascript","-l","JavaScript","-e",script,f.Name()).Output()
+ }
 	if e != nil {
-		fail(w, 422, errors.New("PDFKit could not extract this document. It may be encrypted or unsupported; paste the text instead."))
+		fail(w, 422, errors.New("Could not extract this PDF. It may be scanned, encrypted or unsupported; paste the text instead."))
 		return
 	}
-	text := strings.TrimSpace(string(out))
+	if len(out)>800000 { fail(w,413,errors.New("Extracted PDF text exceeds 800 KB"));return }
+ text := strings.TrimSpace(string(out))
 	if len([]rune(text)) < 20 {
 		fail(w, 422, errors.New("Not enough extractable PDF text. Scanned pages are not OCR'd; paste the document text instead."))
 		return
 	}
-	send(w, 200, map[string]any{"text": text, "source": "macOS PDFKit local extraction", "characters": len([]rune(text))})
+	send(w, 200, map[string]any{"text": text, "source": "Extracted PDF text (no OCR)", "characters": len([]rune(text))})
 }
