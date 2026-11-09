@@ -102,17 +102,40 @@ func (a *App) authorized(r *http.Request) bool {
 	exp, ok := a.sessions[c.Value]
 	return ok && time.Now().Before(exp)
 }
+// dataPath chooses a private writable per-user data directory on every OS.
+// Existing macOS data remains at the original path after upgrading.
 func dataPath() string {
 	home, _ := os.UserHomeDir()
-	if runtime.GOOS == "darwin" {
+	switch runtime.GOOS {
+	case "darwin":
 		return filepath.Join(home, "Library", "Application Support", "InvestOne", "data", "investone.json")
+	case "windows":
+		root := os.Getenv("APPDATA")
+		if root == "" { root = filepath.Join(home, "AppData", "Roaming") }
+		return filepath.Join(root, "InvestOne", "data", "investone.json")
+	default:
+		root := os.Getenv("XDG_DATA_HOME")
+		if root == "" { root = filepath.Join(home, ".local", "share") }
+		return filepath.Join(root, "InvestOne", "data", "investone.json")
 	}
-	return filepath.Join(home, ".local", "share", "InvestOne", "investone.json")
+}
+
+// Browser opening is best-effort: localhost remains reachable if the host
+// does not have a default browser configured.
+func openBrowser(url string) error {
+	switch runtime.GOOS {
+	case "darwin":
+		return exec.Command("/usr/bin/open", url).Start()
+	case "windows":
+		return exec.Command("rundll32", "url.dll,FileProtocolHandler", url).Start()
+	default:
+		return exec.Command("xdg-open", url).Start()
+	}
 }
 func main() {
 	addr := flag.String("addr", "127.0.0.1:18791", "loopback address")
 	data := flag.String("data", dataPath(), "local data file")
-	browser := flag.Bool("open", runtime.GOOS == "darwin", "open browser")
+	browser := flag.Bool("open", true, "open browser")
 	version := flag.Bool("version", false, "print version")
 	flag.Parse()
 	if *version {
@@ -139,8 +162,8 @@ func main() {
 			_ = json.NewDecoder(resp.Body).Decode(&health)
 			_ = resp.Body.Close()
 			if health.App == "InvestOne" {
-				if *browser && runtime.GOOS == "darwin" {
-					_ = exec.Command("/usr/bin/open", "http://"+*addr).Run()
+				if *browser {
+					_ = openBrowser("http://" + *addr)
 				}
 				return
 			}
@@ -155,8 +178,8 @@ func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 	go a.monitorLoop(ctx)
-	if *browser && runtime.GOOS == "darwin" {
-		go func() { time.Sleep(300 * time.Millisecond); _ = exec.Command("/usr/bin/open", "http://"+*addr).Run() }()
+	if *browser {
+		go func() { time.Sleep(300 * time.Millisecond); _ = openBrowser("http://" + *addr) }()
 	}
 	go func() {
 		<-ctx.Done()
