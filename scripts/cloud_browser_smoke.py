@@ -47,6 +47,36 @@ with sync_playwright() as playwright:
  page.unroute("**/api/chat/stream")
  print("UI STREAMING PASS: progressive token rendering from a marked test fixture",flush=True)
 
+ page.locator('nav a[href="#chat"]').click()
+ page.locator("#chat-input").fill("Summarize the latest NVDA news in two sentences")
+ page.locator('#chat-form button[type="submit"]').click()
+ page.locator("#toast.err").wait_for(timeout=10000)
+ assert "API key" in page.locator("#toast.err").inner_text()
+ print("AI CHAT BUTTON PASS: missing-key message shown without a paid request",flush=True)
+
+ page.locator('.core-link[href="#markets"]').click()
+ page.locator("#research-data h2").filter(has_text="News and summaries").wait_for(timeout=45000)
+ assert page.locator("#research-data").is_visible()
+ print("NEWS RESEARCH BUTTON PASS",flush=True)
+
+ page.locator('nav a[href="#chat"]').click()
+ page.locator('.core-link[href="#quant"]').click()
+ assert "Sector Allocation" in page.locator("#page-content").inner_text()
+ page.locator('#quant-form button[type="submit"]').click()
+ page.locator("#quant-result .metric").first.wait_for(timeout=90000)
+ assert "Strategy cumulative return" in page.locator("#quant-result").inner_text()
+ print("SECTOR ALLOCATION AND BACKTEST BUTTON PASS",flush=True)
+
+ page.locator('nav a[href="#automation"]').click()
+ page.locator('#rule-form input[name="symbol"]').fill("SPY")
+ page.locator('#rule-form select[name="type"]').select_option("price_below")
+ page.locator('#rule-form input[name="threshold"]').fill("1")
+ page.locator('#rule-form button[type="submit"]').click()
+ page.locator(".rule").filter(has_text="SPY").wait_for(timeout=10000)
+ page.get_by_role("button",name="Check now").click()
+ page.locator(".rule").filter(has_text="SPY").wait_for(timeout=15000)
+ print("RISK MONITOR BUTTON PASS",flush=True)
+
  assert not errors,errors
  # Reproduce the real bug: leave GitHub Pages and navigate to Railway
  # so Chromium sends Sec-Fetch-Site: cross-site on the document request.
