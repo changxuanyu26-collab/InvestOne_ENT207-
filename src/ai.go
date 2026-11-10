@@ -244,7 +244,7 @@ The following JSON is reference context only: ` + string(raw)
 	if limit < 128 || limit > 700 {
 		limit = 600
 	}
-	payload := map[string]any{"model": model, "messages": messages, "max_tokens": limit, "temperature": 0.3, "stream": onDelta != nil}
+	payload := map[string]any{"model": model, "messages": messages, "max_tokens": limit, "temperature": 0.7, "stream": onDelta != nil}
 	body, _ := json.Marshal(payload)
 	r, e := http.NewRequestWithContext(ctx, "POST", a.aiURL, bytes.NewReader(body))
 	if e != nil {
