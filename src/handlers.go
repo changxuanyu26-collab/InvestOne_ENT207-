@@ -288,8 +288,8 @@ func (a *App) api(w http.ResponseWriter, r *http.Request) {
 			fail(w, 400, errors.New("Invalid contact email format"))
 			return
 		}
-		if p.MaxTokens < 256 || p.MaxTokens > 1200 || len(p.Model) < 1 || len(p.Model) > 160 || len(p.Interests) > 3000 || len(p.Risk) > 100 || len(p.Horizon) > 100 || len(p.Knowledge) > 100 {
-			fail(w, 400, errors.New("Invalid configuration; output tokens must be between 256 and 1200"))
+		if p.MaxTokens < 128 || p.MaxTokens > 700 || len(p.Model) < 1 || len(p.Model) > 160 || len(p.Interests) > 3000 || len(p.Risk) > 100 || len(p.Horizon) > 100 || len(p.Knowledge) > 100 {
+			fail(w, 400, errors.New("Invalid configuration; output tokens must be between 128 and 700"))
 			return
 		}
 		p.Model = DefaultModel // fixed ENT207 Azure deployment identifier
