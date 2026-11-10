@@ -409,6 +409,24 @@ func (p *liveProvider) SearchNews(ctx context.Context, question string) ([]Sourc
 	if len(items) == 0 {
 		return nil, errors.New("No question-specific news results were returned")
 	}
+	// Prefer reporting with clear editorial or primary-source attribution
+	// when the feed mixes reporting, commentary, and low-quality rewrites.
+	newsRank := func(publisher string) int {
+		p := strings.ToLower(publisher)
+		switch {
+		case strings.Contains(p, "nvidia") && strings.Contains(p, "newsroom"):
+			return 0
+		case strings.Contains(p, "ap news"), strings.Contains(p, "reuters"):
+			return 1
+		case strings.Contains(p, "pbs"), strings.Contains(p, "cnbc"), strings.Contains(p, "axios"):
+			return 2
+		case strings.Contains(p, "new york times"), strings.Contains(p, "wall street journal"), strings.Contains(p, "wsj"):
+			return 3
+		default:
+			return 4
+		}
+	}
+	sort.SliceStable(items, func(i, j int) bool { return newsRank(items[i].Publisher) < newsRank(items[j].Publisher) })
 	return items, nil
 }
 func (p *liveProvider) Community(ctx context.Context, s string) ([]Source, error) {
