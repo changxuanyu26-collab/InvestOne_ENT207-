@@ -361,6 +361,8 @@ func (a *App) api(w http.ResponseWriter, r *http.Request) {
 		}
 		e = a.store.update(func(s *State) error { return applyTrade(s, v.Side, sym, v.Quantity, ch.Price, ch.Source, ch.AsOf) })
 		respondUpdate(w, e)
+	case "/api/chat/stream":
+		a.streamChat(w,r)
 	case "/api/chat":
 		var v ChatRequest
 		if e := decode(w, r, &v); e != nil {
