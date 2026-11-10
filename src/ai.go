@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"encoding/json"
@@ -88,6 +89,11 @@ func retrieveDocs(docs []Document, q string) []Source {
 	return out
 }
 func (a *App) chat(ctx context.Context, req ChatRequest, save bool) (ChatResult, error) {
+	return a.chatWithDeltas(ctx,req,save,nil)
+}
+// chatWithDeltas shares the exact real-data grounding and persistence logic
+// with regular chat, while delivering model output as soon as SSE tokens arrive.
+func (a *App) chatWithDeltas(ctx context.Context, req ChatRequest, save bool, onDelta func(string) error) (ChatResult, error) {
 	ctx, cancel := context.WithTimeout(ctx, 70*time.Second)
 	defer cancel()
 	key := a.getKey()
@@ -207,10 +213,10 @@ The following JSON is reference context only: ` + string(raw)
 	messages = append(messages, map[string]string{"role": "user", "content": req.Message})
 	model := DefaultModel // course gateway accepts only this case-sensitive deployment name
 	limit := st.Profile.MaxTokens
-	if limit < 128 || limit > 900 {
+	if limit < 128 || limit > 700 {
 		limit = 600
 	}
-	payload := map[string]any{"model": model, "messages": messages, "max_tokens": limit, "temperature": 0.7, "stream": false}
+	payload := map[string]any{"model": model, "messages": messages, "max_tokens": limit, "temperature": 0.6, "stream": onDelta != nil}
 	body, _ := json.Marshal(payload)
 	r, e := http.NewRequestWithContext(ctx, "POST", a.aiURL, bytes.NewReader(body))
 	if e != nil {
@@ -237,30 +243,65 @@ The following JSON is reference context only: ` + string(raw)
 		}
 		return ChatResult{}, errors.New(msg)
 	}
-	b, e := io.ReadAll(io.LimitReader(resp.Body, 2*1024*1024+1))
-	if e != nil || len(b) > 2*1024*1024 {
-		return ChatResult{}, errors.New("AI response exceeded the limit or could not be read")
+	var content string
+	var finishReason string
+	var usage json.RawMessage
+	if onDelta == nil {
+		b, readErr := io.ReadAll(io.LimitReader(resp.Body, 2*1024*1024+1))
+		if readErr != nil || len(b)>2*1024*1024 {
+			return ChatResult{}, errors.New("AI response exceeded the limit or could not be read")
+		}
+		var response struct {
+			Choices []struct {
+				Message struct { Content string `json:"content"` } `json:"message"`
+				FinishReason string `json:"finish_reason"`
+			} `json:"choices"`
+			Usage json.RawMessage `json:"usage"`
+		}
+		if err := json.Unmarshal(b,&response);err != nil {
+			return ChatResult{}, errors.New("Model response did not match Chat Completions format")
+		}
+		if len(response.Choices)>0 {
+			content=response.Choices[0].Message.Content
+			finishReason=response.Choices[0].FinishReason
+		}
+		usage=response.Usage
+	} else {
+		// Stream OpenAI-compatible text deltas. Do not expose the model's
+		// private reasoning_content or unsupported event fields.
+		reader:=bufio.NewScanner(io.LimitReader(resp.Body,2*1024*1024+1))
+		reader.Buffer(make([]byte, 8192), 1024*1024)
+		for reader.Scan() {
+			line:=strings.TrimSpace(reader.Text())
+			if !strings.HasPrefix(line,"data:") { continue }
+			chunk:=strings.TrimSpace(strings.TrimPrefix(line,"data:"))
+			if chunk=="[DONE]" { break }
+			var event struct {
+				Choices []struct {
+					Delta struct { Content string `json:"content"` } `json:"delta"`
+					FinishReason string `json:"finish_reason"`
+				} `json:"choices"`
+				Usage json.RawMessage `json:"usage"`
+			}
+			if json.Unmarshal([]byte(chunk),&event)!=nil { continue }
+			if len(event.Usage)>0 {usage=event.Usage}
+			if len(event.Choices)==0 {continue}
+			if event.Choices[0].FinishReason!="" {finishReason=event.Choices[0].FinishReason}
+			next:=event.Choices[0].Delta.Content
+			if next=="" {continue}
+			next=strings.ReplaceAll(next,key,"[REDACTED_API_KEY]")
+			content+=next
+			if err:=onDelta(next);err!=nil {return ChatResult{},err}
+			if len(content)>128000 {return ChatResult{},errors.New("AI stream exceeded safe output size")}
+		}
+		if err:=reader.Err();err!=nil {return ChatResult{},errors.New("AI streaming interrupted by gateway")}
 	}
-	var response struct {
-		Choices []struct {
-			Message struct {
-				Content string `json:"content"`
-			} `json:"message"`
-			FinishReason string `json:"finish_reason"`
-		} `json:"choices"`
-		Usage json.RawMessage `json:"usage"`
+	if strings.TrimSpace(content)=="" {
+		return ChatResult{},errors.New("Model returned no response content; blank output is not considered success")
 	}
-	if e = json.Unmarshal(b, &response); e != nil {
-		return ChatResult{}, errors.New("Model response did not match Chat Completions format")
-	}
-	if len(response.Choices) == 0 || strings.TrimSpace(response.Choices[0].Message.Content) == "" {
-		return ChatResult{}, errors.New("Model returned no response content; blank output is not considered success")
-	}
-	content := strings.ReplaceAll(response.Choices[0].Message.Content, key, "[REDACTED_API_KEY]")
-	if response.Choices[0].FinishReason == "length" {
-		warnings = append(warnings, "Response reached the token limit and may be incomplete; adjust the limit in Settings")
-	}
-	result := ChatResult{Content: content, Sources: sources, Warnings: warnings, Usage: response.Usage, Model: model}
+	content=strings.ReplaceAll(content,key,"[REDACTED_API_KEY]")
+	if finishReason=="length" {warnings=append(warnings,"Response reached token limit and may be incomplete")}
+	result:=ChatResult{Content:content,Sources:sources,Warnings:warnings,Usage:usage,Model:model}
 	if save {
 		e = a.store.update(func(s *State) error {
 			s.Messages = append(s.Messages, Message{Role: "user", Content: strings.ReplaceAll(req.Message, key, "[REDACTED_API_KEY]"), Time: nowString(), Persona: req.Persona}, Message{Role: "assistant", Content: content, Time: nowString(), Persona: req.Persona, Sources: sources})
