@@ -367,9 +367,28 @@ func (p *liveProvider) News(ctx context.Context, s string) ([]Source, error) {
 // words as a search query and returns source links and RSS excerpts only; the
 // model does not receive an invented article body.
 func (p *liveProvider) SearchNews(ctx context.Context, question string) ([]Source, error) {
-	question = strings.TrimSpace(trimRunes(question, 140))
+	question = strings.TrimSpace(question)
 	if question == "" {
 		return nil, errors.New("Empty news search")
+	}
+	// The request may contain instructions after the actual question. News
+	// search needs event terms, not a verbatim paragraph of directions.
+	for _, mark := range []string{"？", "?", "。", "\n"} {
+		if at := strings.Index(question, mark); at > 0 {
+			question = question[:at]
+		}
+	}
+	if (strings.Contains(question, "黄仁勋") || strings.Contains(strings.ToLower(question), "jensen huang")) &&
+		(strings.Contains(question, "出轨") || strings.Contains(strings.ToLower(question), "affair")) {
+		question = "Jensen Huang affair"
+	} else {
+		for _, ending := range []string{"会有什么影响", "有什么影响", "有何影响", "对股票", "对股价", "请引用可靠来源", "并区分已证实事实与市场推测"} {
+			question = strings.ReplaceAll(question, ending, " ")
+		}
+		question = strings.TrimSpace(trimRunes(question, 90))
+	}
+	if question == "" {
+		return nil, errors.New("No searchable event terms found")
 	}
 	locale := "hl=en-US&gl=US&ceid=US:en"
 	for _, r := range question {

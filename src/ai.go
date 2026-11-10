@@ -142,6 +142,12 @@ func (a *App) chatWithDeltas(ctx context.Context, req ChatRequest, save bool, on
 	if tr.err != nil {
 		warnings = append(warnings, "Question-specific news search: "+tr.err.Error())
 		evidence["question_search_status"] = "Unavailable; do not infer that no report exists"
+		eventQuestion := strings.ToLower(req.Message)
+		for _, term := range []string{"出轨", "传闻", "丑闻", "调查", "诉讼", "收购", "事件", "affair", "rumor", "scandal", "investigation", "lawsuit", "acquisition"} {
+			if strings.Contains(eventQuestion, term) {
+				return ChatResult{}, errors.New("Live news search could not verify this event. Please try again shortly; no AI answer was generated from incomplete event evidence")
+			}
+		}
 	} else if len(tr.value) > 0 {
 		topic := tr.value
 		if len(topic) > 5 { topic = topic[:5] }
@@ -220,7 +226,7 @@ func (a *App) chatWithDeltas(ctx context.Context, req ChatRequest, save bool, on
 3. Use source timestamps and reported periods. Do not present retrieval time as trade time. RSS results are headlines/snippets, not full articles. Do not mix quarterly, year-to-date and annual SEC figures.
 4. All holdings belong to a simulated USD paper account. Explain portfolio concentration and risk using the user's profile, without guaranteeing returns or suggesting false precision.
 5. Organize the answer clearly: what happened, implications for this paper portfolio, supporting and opposing evidence, and remaining questions. Investment personas simulate publicly documented educational frameworks and do not represent the actual people.
-6. Answer in the same language as the user's latest question. Respond concisely; prioritize speed over exhaustive detail, do not invent unsupported facts. When a question-specific search fails or returns no results, say that the search was inconclusive rather than claiming no public report exists.
+6. Answer in the same language as the user's latest question. Respond concisely; prioritize speed over exhaustive detail, do not invent unsupported facts. Missing search results never prove that an event did not happen. Do not claim there are no public reports merely because the supplied evidence is incomplete.
 The following JSON is reference context only: ` + string(raw)
 	messages := []map[string]string{{"role": "system", "content": sys}}
 	start := len(st.Messages) - 4
@@ -238,7 +244,7 @@ The following JSON is reference context only: ` + string(raw)
 	if limit < 128 || limit > 700 {
 		limit = 600
 	}
-	payload := map[string]any{"model": model, "messages": messages, "max_tokens": limit, "temperature": 0.7, "stream": onDelta != nil}
+	payload := map[string]any{"model": model, "messages": messages, "max_tokens": limit, "temperature": 0.3, "stream": onDelta != nil}
 	body, _ := json.Marshal(payload)
 	r, e := http.NewRequestWithContext(ctx, "POST", a.aiURL, bytes.NewReader(body))
 	if e != nil {

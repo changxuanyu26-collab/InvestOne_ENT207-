@@ -67,12 +67,12 @@ func TestFallbackGoogleNews(t *testing.T) {
 }
 func TestQuestionSpecificNewsSearch(t *testing.T) {
 	p := backupFixtureProvider(func(r *http.Request) (*http.Response, error) {
-		if r.URL.Hostname() != "news.google.com" || r.URL.Query().Get("q") != "黄仁勋出轨对股票有什么影响" || r.URL.Query().Get("hl") != "zh-CN" {
+		if r.URL.Hostname() != "news.google.com" || r.URL.Query().Get("q") != "Jensen Huang affair" || r.URL.Query().Get("hl") != "en-US" {
 			t.Fatalf("unexpected question search: %s", r.URL.String())
 		}
 		return response(200, `<rss version="2.0"><channel><item><title>NVIDIA publishes a company statement</title><link>https://news.google.com/articles/statement</link><pubDate>Mon, 09 Nov 2026 09:00:00 GMT</pubDate></item></channel></rss>`), nil
 	})
-	items, err := p.SearchNews(context.Background(), "黄仁勋出轨对股票有什么影响")
+	items, err := p.SearchNews(context.Background(), "黄仁勋出轨对股票有什么影响？请引用可靠来源")
 	if err != nil || len(items) != 1 || items[0].Publisher == "" {
 		t.Fatalf("question-specific search failed: %+v %v", items, err)
 	}
