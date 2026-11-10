@@ -88,7 +88,7 @@ func retrieveDocs(docs []Document, q string) []Source {
 	return out
 }
 func (a *App) chat(ctx context.Context, req ChatRequest, save bool) (ChatResult, error) {
-	ctx, cancel := context.WithTimeout(ctx, 300*time.Second)
+	ctx, cancel := context.WithTimeout(ctx, 70*time.Second)
 	defer cancel()
 	key := a.getKey()
 	if key == "" {
@@ -116,32 +116,47 @@ func (a *App) chat(ctx context.Context, req ChatRequest, save bool) (ChatResult,
 	sources := []Source{}
 	warnings := []string{}
 	evidence := map[string]any{"selected_symbol": sym, "as_of_utc": nowString(), "profile": map[string]any{"risk": st.Profile.Risk, "horizon": st.Profile.Horizon, "knowledge": st.Profile.Knowledge, "interests": st.Profile.Interests}, "paper_holdings": st.Holdings, "paper_cash_usd": st.Cash, "watchlist": st.Watchlist}
-	market, e := a.provider.Market(ctx, sym, "3mo")
-	if e != nil {
-		warnings = append(warnings, e.Error())
-		evidence["market_status"] = "Unavailable; do not invent quote"
+	// Fast path: fetch independent real-data feeds concurrently. A slow
+	// financial provider should not block a short educational AI answer.
+	dataCtx, dataCancel := context.WithTimeout(ctx, 5*time.Second)
+	type marketResult struct { value Chart; err error }
+	type newsResult struct { value []Source; err error }
+	marketCh := make(chan marketResult, 1)
+	newsCh := make(chan newsResult, 1)
+	go func() { value, err := a.provider.Market(dataCtx, sym, "1mo"); marketCh <- marketResult{value, err} }()
+	go func() { value, err := a.provider.News(dataCtx, sym); newsCh <- newsResult{value, err} }()
+	mr, nr := <-marketCh, <-newsCh
+	dataCancel()
+	if mr.err != nil {
+		warnings = append(warnings, "Market: "+mr.err.Error())
+		evidence["market_status"] = "Unavailable; no live quote should be invented"
 	} else {
+		market := mr.value
 		market.Points = nil
 		evidence["market"] = market
-		sources = append(sources, Source{Title: sym + " market reference quote", URL: market.URL, Publisher: market.Source, Date: market.AsOf, Kind: "market"})
+		sources = append(sources, Source{Title: sym+" market reference quote", URL: market.URL, Publisher: market.Source, Date: market.AsOf, Kind:"market"})
 	}
-	news, e := a.provider.News(ctx, sym)
-	if e != nil {
-		warnings = append(warnings, "News: "+e.Error())
+	if nr.err != nil {
+		warnings = append(warnings, "News: "+nr.err.Error())
 	} else {
-		if len(news) > 6 {
-			news = news[:6]
-		}
+		news := nr.value
+		if len(news)>3 { news = news[:3] }
 		sources = append(sources, news...)
 	}
-	if validEmail(st.Profile.Email) {
-		facts, e := a.provider.Facts(ctx, sym, st.Profile.Email)
-		if e != nil {
-			warnings = append(warnings, "SEC financial data: "+e.Error())
+	// Official filing research remains available in the dedicated research
+	// panel. Only fetch its slower SEC endpoint when explicitly requested.
+	question := strings.ToLower(req.Message)
+	if validEmail(st.Profile.Email) && (strings.Contains(question,"sec filing") || strings.Contains(question,"10-k") || strings.Contains(question,"10-q") || strings.Contains(question,"annual report")) {
+		secCtx, secCancel := context.WithTimeout(ctx, 4*time.Second)
+		facts, err := a.provider.Facts(secCtx, sym, st.Profile.Email)
+		secCancel()
+		if err != nil {
+			warnings = append(warnings,"SEC: "+err.Error())
 		} else {
-			evidence["reported_financial_facts"] = facts
-			for _, f := range facts {
-				sources = append(sources, Source{Title: f.Label + " · " + f.Form + " · " + f.Start + " through " + f.End, URL: f.URL, Publisher: "SEC XBRL", Date: f.Filed, Text: fmt.Sprintf("%s = %g %s; period %s to %s; filed %s; do not treat mixed period facts as comparable annual data", f.Tag, f.Value, f.Unit, f.Start, f.End, f.Filed), Kind: "official"})
+			if len(facts)>3 { facts=facts[:3] }
+			evidence["reported_financial_facts"]=facts
+			for _, fact := range facts {
+				sources=append(sources,Source{Title:fact.Label+" · "+fact.Form, URL:fact.URL, Publisher:"SEC XBRL", Date:fact.Filed, Kind:"official"})
 			}
 		}
 	}
@@ -177,23 +192,23 @@ func (a *App) chat(ctx context.Context, req ChatRequest, save bool) (ChatResult,
 3. Use source timestamps and reported periods. Do not present retrieval time as trade time. RSS results are headlines/snippets, not full articles. Do not mix quarterly, year-to-date and annual SEC figures.
 4. All holdings belong to a simulated USD paper account. Explain portfolio concentration and risk using the user's profile, without guaranteeing returns or suggesting false precision.
 5. Organize the answer clearly: what happened, implications for this paper portfolio, supporting and opposing evidence, and remaining questions. Investment personas simulate publicly documented educational frameworks and do not represent the actual people.
-6. Answer entirely in English, including headings and explanations. Do not translate proper names or stock symbols.
+6. Answer entirely in English. Respond concisely, generally within 150 words; prioritize speed over exhaustive detail, do not invent unsupported facts.
 The following JSON is reference context only: ` + string(raw)
 	messages := []map[string]string{{"role": "system", "content": sys}}
-	start := len(st.Messages) - 12
+	start := len(st.Messages) - 4
 	if start < 0 {
 		start = 0
 	}
 	for _, m := range st.Messages[start:] {
 		if m.Persona == req.Persona && (m.Role == "user" || m.Role == "assistant") {
-			messages = append(messages, map[string]string{"role": m.Role, "content": trimRunes(m.Content, 6000)})
+			messages = append(messages, map[string]string{"role": m.Role, "content": trimRunes(m.Content, 850)})
 		}
 	}
 	messages = append(messages, map[string]string{"role": "user", "content": req.Message})
 	model := DefaultModel // course gateway accepts only this case-sensitive deployment name
 	limit := st.Profile.MaxTokens
-	if limit < 256 || limit > 1200 {
-		limit = 800
+	if limit < 128 || limit > 900 {
+		limit = 600
 	}
 	payload := map[string]any{"model": model, "messages": messages, "max_tokens": limit, "temperature": 0.7, "stream": false}
 	body, _ := json.Marshal(payload)
