@@ -92,7 +92,7 @@ func (a *App) chat(ctx context.Context, req ChatRequest, save bool) (ChatResult,
 	defer cancel()
 	key := a.getKey()
 	if key == "" {
-		return ChatResult{}, errors.New("Enter a Highway API key on the sign-in or Settings page first")
+		return ChatResult{}, errors.New("Enter your ENT207 group DeepSeek API key in Settings to use live AI")
 	}
 	if len([]rune(req.Message)) < 1 || len([]rune(req.Message)) > 12000 {
 		return ChatResult{}, errors.New("Question length must be 1–12,000 characters")
@@ -190,13 +190,10 @@ The following JSON is reference context only: ` + string(raw)
 		}
 	}
 	messages = append(messages, map[string]string{"role": "user", "content": req.Message})
-	model := st.Profile.Model
-	if model == "" {
-		model = DefaultModel
-	}
+	model := DefaultModel // course gateway accepts only this case-sensitive deployment name
 	limit := st.Profile.MaxTokens
-	if limit < 256 || limit > 65536 {
-		limit = 8192
+	if limit < 256 || limit > 1200 {
+		limit = 800
 	}
 	payload := map[string]any{"model": model, "messages": messages, "max_tokens": limit, "temperature": 0.7, "stream": false}
 	body, _ := json.Marshal(payload)
@@ -205,14 +202,16 @@ The following JSON is reference context only: ` + string(raw)
 		return ChatResult{}, e
 	}
 	r.Header.Set("Authorization", "Bearer "+key)
+	// ENT207 Azure API Management authenticates via this exact header.
+	r.Header.Set("api-key", key)
 	r.Header.Set("Content-Type", "application/json")
 	resp, e := a.client.Do(r)
 	if e != nil {
-		return ChatResult{}, errors.New("Highway API connection failed or timed out; no automatic retry was made to avoid duplicate charges")
+		return ChatResult{}, errors.New("ENT207 DeepSeek connection failed or timed out; no automatic retry was made to avoid duplicate charges")
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != 200 {
-		msg := fmt.Sprintf("Highway returned HTTP %d", resp.StatusCode)
+		msg := fmt.Sprintf("ENT207 DeepSeek returned HTTP %d", resp.StatusCode)
 		switch resp.StatusCode {
 		case 401, 403:
 			msg += ": check API key or model permissions"
