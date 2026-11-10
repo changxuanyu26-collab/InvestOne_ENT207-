@@ -34,6 +34,7 @@ print("HEALTH PASS",health,flush=True)
 a,b=Browser(),Browser()
 x,y=a.get("/api/state"),b.get("/api/state")
 assert x["state"]["profile"]["risk"]==y["state"]["profile"]["risk"]
+assert x["state"].get("messages")==[] and y["state"].get("messages")==[]
 a.post("/api/profile",{"risk":"Conservative","horizon":"3–5 years","knowledge":"Beginner","interests":"Technology","email":"","model":"DeepSeek-V4-Flash","max_tokens":400})
 x,y=a.get("/api/state"),b.get("/api/state")
 assert x["state"]["profile"]["risk"]=="Conservative"

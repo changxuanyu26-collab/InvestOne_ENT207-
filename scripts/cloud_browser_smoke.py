@@ -21,6 +21,12 @@ with sync_playwright() as playwright:
  assert all(any(e in item for item in actual) for e in expected),actual
  assert page.get_by_role("link",name="＋ Connect ENT207 DeepSeek AI Key").count()==0
  assert "ENT207 DeepSeek AI configured" in page.locator(".topbar").inner_text()
+ page.evaluate('''() => { rememberCurrentReply("SESSION_ONLY_FIXTURE","assistant",{content:"TEMPORARY_REPLY_FIXTURE",sources:[]}); render(); }''')
+ assert "TEMPORARY_REPLY_FIXTURE" in page.locator("#messages").inner_text()
+ page.reload(wait_until="load")
+ page.locator("nav .nav-item").first.wait_for(timeout=40000)
+ assert "TEMPORARY_REPLY_FIXTURE" not in page.locator("#messages").inner_text()
+ print("EPHEMERAL CHAT PASS: current-page reply disappears after reload",flush=True)
  page.get_by_role("link",name="Investor Digital Humans").click()
  page.locator(".persona-card").first.wait_for(timeout=10000)
  assert page.locator(".persona-card").count()==3
