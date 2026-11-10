@@ -39,7 +39,7 @@ The six files are published by [GitHub Pages automated build](.github/workflows/
 
 **[Open the InvestOne Landing Page, then click TRY OUR APP](https://changxuanyu26-collab.github.io/InvestOne_ENT207-/)**
 
-The landing page leads to the real Go backend hosted on Railway, not to the old simulated preview. Visitors can access provider-backed financial data without registration. Their research preferences, holdings, alerts and documents are isolated in persistent browser workspaces. For actual AI analysis, visitors enter their own Highway API key in the app settings; keys remain in server memory.
+The landing page leads to the real Go backend hosted on Railway, not to the old simulated preview. Visitors can access provider-backed financial data without registration. Their research preferences, holdings, alerts and documents are isolated in persistent browser workspaces. For actual AI analysis, visitors enter their own ENT207 DeepSeek API key in the app settings; keys remain in server memory.
 
 The five connected features are real AI Investment Chatbot (user-supplied key), Personalised Intelligence (saved user context), Continuous Automation (server-side rules), Community Integration (real public RSS where available), and Investor Digital Humans (educational Buffett/Munger/Graham AI frameworks, stylized avatars and browser speech synthesis). The last feature is not a clone of any actual investor.
 
@@ -51,9 +51,17 @@ The [original video](https://changxuanyu26-collab.github.io/InvestOne_ENT207-/de
 
 | Edition | Runs where | Data and AI |
 |---|---|---|
-| **Web App** | Railway HTTPS, reachable from GitHub landing page | Live upstream data, personal browser sessions, user-supplied Highway API key |
+| **Web App** | Railway HTTPS, reachable from GitHub landing page | Live upstream data, personal browser sessions, visitor-supplied ENT207 DeepSeek API key |
 | **Desktop** | Mac, Windows and Linux local Go server | Same external providers and user-owned credentials |
 | **Archived preview** | GitHub Pages /app/ | Synthetic examples only |
+
+## ENT207TC school DeepSeek model
+
+InvestOne now uses the course gateway **DeepSeek-V4-Flash** (case-sensitive), with server-side endpoint `https://apim-ent207tc.azure-api.net/deepseek/openai/v1`. Calls require the `api-key` header, as well as an OpenAI-compatible bearer credential. Each visitor enters their own authorized group key in Settings. Key values are never committed to GitHub or embedded in public browser code, and the app does not offer unrestricted anonymous paid AI usage.
+
+The course documentation describes a shared budget of **10,000 tokens per minute per group and 5,000,000 tokens per month**. The default output cap is set to 800 tokens to reduce quota consumption. Real provider-backed market data remains available to guests without a model key.
+
+In **Investor Digital Humans**, selecting Buffett-, Munger- or Graham-inspired analysis stays on the same page and opens a dedicated AI conversation. The talking avatars are original educational visuals with browser speech synthesis, not real-person likenesses or cloned voices.
 
 ## Original five connected core functions
 
@@ -80,9 +88,9 @@ The Go source under `src/` uses actual HTTPS provider responses and records prov
 | Financial news | Yahoo Finance RSS → Google News RSS | Headline/snippet results; source dates are shown |
 | SEC company filings and financial facts | SEC EDGAR submissions / XBRL companyfacts | Requires a **real SEC contact email**, entered in local Settings |
 | Community discussion | Public Reddit RSS | Unavailable if blocked or restricted; local evidence saving remains usable |
-| AI analysis | User-supplied Highway OpenAI-compatible API | Default `deepseek/deepseek-v4.1-flash`; actual key required |
+| AI analysis | User-supplied ENT207 DeepSeek OpenAI-compatible API | Default `DeepSeek-V4-Flash`; actual key required |
 
-**Independent evidence:** The [GitHub live-provider test run](https://github.com/changxuanyu26-collab/InvestOne_ENT207-/actions/runs/42665287680) successfully fetched actual SPY, NVDA and 600519.SS chart data, NVDA news and Reddit public posts on Nov 9, 2026 (UTC). The SEC and paid Highway calls were **not tested** in that run: no legitimate SEC contact email or user-paid AI key was supplied. Third-party availability may change; run the app's data-connection diagnostics on your Mac.
+**Independent evidence:** The [GitHub live-provider test run](https://github.com/changxuanyu26-collab/InvestOne_ENT207-/actions/runs/42665287680) successfully fetched actual SPY, NVDA and 600519.SS chart data, NVDA news and Reddit public posts on Nov 9, 2026 (UTC). The SEC and paid ENT207 DeepSeek calls were **not tested** in that run: no legitimate SEC contact email or user-paid AI key was supplied. Third-party availability may change; run the app's data-connection diagnostics on your Mac.
 
 See [detailed desktop setup and data-provider guide](docs/DESKTOP_GUIDE.md).
 
@@ -90,7 +98,7 @@ See [detailed desktop setup and data-provider guide](docs/DESKTOP_GUIDE.md).
 
 1. For the current cross-platform build use the V2.1 downloads above; the old [InvestOne V2 Apple Silicon ZIP](https://github.com/changxuanyu26-collab/InvestOne_ENT207-/releases/tag/v2.0.0-rc2).
 2. Unzip it and double-click **Open InvestOne.command**. The bundled app is compiled for Mac M-series; no Python, Node, or Docker installation is required.
-3. Sign in with `红豆薏米水` or `RedBeanCoix` and, for AI analysis, enter your Highway API Key.
+3. Sign in with `红豆薏米水` or `RedBeanCoix` and, for AI analysis, enter your ENT207 Azure DeepSeek API Key.
 4. Open **Settings → Check live data connections** and inspect each endpoint, its source and timestamp. For official SEC data, supply your own legitimate contact email.
 
 All personal state remains under `~/Library/Application Support/InvestOne/`. No API key or user portfolio is committed to GitHub. The Mac binary is not Apple-signed/notarized; macOS may require explicit approval for an app you trust.
