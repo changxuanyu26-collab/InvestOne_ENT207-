@@ -288,10 +288,11 @@ func (a *App) api(w http.ResponseWriter, r *http.Request) {
 			fail(w, 400, errors.New("Invalid contact email format"))
 			return
 		}
-		if p.MaxTokens < 256 || p.MaxTokens > 65536 || len(p.Model) < 1 || len(p.Model) > 160 || len(p.Interests) > 3000 || len(p.Risk) > 100 || len(p.Horizon) > 100 || len(p.Knowledge) > 100 {
-			fail(w, 400, errors.New("Invalid configuration; output tokens must be between 256 and 65536"))
+		if p.MaxTokens < 256 || p.MaxTokens > 1200 || len(p.Model) < 1 || len(p.Model) > 160 || len(p.Interests) > 3000 || len(p.Risk) > 100 || len(p.Horizon) > 100 || len(p.Knowledge) > 100 {
+			fail(w, 400, errors.New("Invalid configuration; output tokens must be between 256 and 1200"))
 			return
 		}
+		p.Model = DefaultModel // fixed ENT207 Azure deployment identifier
 		e := a.store.update(func(s *State) error { s.Profile = p; return nil })
 		respondUpdate(w, e)
 	case "/api/watchlist":
