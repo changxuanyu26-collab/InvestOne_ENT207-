@@ -34,7 +34,7 @@ print("HEALTH PASS",health,flush=True)
 a,b=Browser(),Browser()
 x,y=a.get("/api/state"),b.get("/api/state")
 assert x["state"]["profile"]["risk"]==y["state"]["profile"]["risk"]
-a.post("/api/profile",{"risk":"Conservative","horizon":"3–5 years","knowledge":"Beginner","interests":"Technology","email":"","model":"deepseek/deepseek-v4.1-flash","max_tokens":8192})
+a.post("/api/profile",{"risk":"Conservative","horizon":"3–5 years","knowledge":"Beginner","interests":"Technology","email":"","model":"DeepSeek-V4-Flash","max_tokens":400})
 x,y=a.get("/api/state"),b.get("/api/state")
 assert x["state"]["profile"]["risk"]=="Conservative"
 assert y["state"]["profile"]["risk"]!="Conservative"
@@ -56,7 +56,7 @@ try:
     response=a.post("/api/chat",{"message":"Summarize NVDA","symbol":"NVDA","persona":"assistant","include_community":False})
     raise AssertionError("Unexpected paid AI success without a key: "+str(response)[:100])
 except urllib.error.HTTPError as ex:
-    assert ex.code in (400,401,422,502) and b"Highway API key" in ex.read(),ex.code
+    assert ex.code in (400,401,422,502) and b"DeepSeek API key" in ex.read(),ex.code
 print("AI-KEY GUARD PASS (no paid AI request made)",flush=True)
 
 # Exercise persistent automation with a non-triggering rule, without using AI credits.
