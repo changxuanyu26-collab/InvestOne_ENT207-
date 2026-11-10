@@ -135,7 +135,9 @@ func (a *App) api(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if path == "/api/state" && r.Method == "GET" {
-		send(w, 200, map[string]any{"state": a.store.snapshot(), "ai_ready": a.getKey() != "", "public_ai": a.sharedKey != "", "version": Version, "username": Username, "api_base": APIBase, "mode": "LIVE_DATA_ONLY"})
+		state := a.store.snapshot()
+		if a.sharedKey != "" { state.Messages = []Message{} }
+		send(w, 200, map[string]any{"state": state, "ai_ready": a.getKey() != "", "public_ai": a.sharedKey != "", "version": Version, "username": Username, "api_base": APIBase, "mode": "LIVE_DATA_ONLY"})
 		return
 	}
 	if path == "/api/logout" && r.Method == "POST" {
@@ -149,7 +151,9 @@ func (a *App) api(w http.ResponseWriter, r *http.Request) {
 	}
 	if path == "/api/export" && r.Method == "GET" {
 		w.Header().Set("Content-Disposition", "attachment; filename=InvestOne-data.json")
-		send(w, 200, a.store.snapshot())
+		state := a.store.snapshot()
+		if a.sharedKey != "" { state.Messages = []Message{} }
+		send(w, 200, state)
 		return
 	}
 	if path == "/api/quotes" && r.Method == "GET" {
@@ -375,7 +379,7 @@ func (a *App) api(w http.ResponseWriter, r *http.Request) {
 		}
 		c, cancel := context.WithTimeout(r.Context(), 200*time.Second)
 		defer cancel()
-		res, e := a.chat(c, v, true)
+		res, e := a.chat(c, v, a.sharedKey == "")
 		if e != nil {
 			fail(w, 502, e)
 			return

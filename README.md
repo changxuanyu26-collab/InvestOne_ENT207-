@@ -51,15 +51,15 @@ The [original video](https://changxuanyu26-collab.github.io/InvestOne_ENT207-/de
 
 | Edition | Runs where | Data and AI |
 |---|---|---|
-| **Web App** | Railway HTTPS, reachable from GitHub landing page | Live upstream data, personal browser sessions, visitor-supplied ENT207 DeepSeek API key |
+| **Web App** | Railway HTTPS, reachable from GitHub landing page | Live upstream data, isolated browser workspaces, server-managed shared ENT207 DeepSeek AI, and chat that resets on reload |
 | **Desktop** | Mac, Windows and Linux local Go server | Same external providers and user-owned credentials |
 | **Archived preview** | GitHub Pages /app/ | Synthetic examples only |
 
 ## ENT207TC school DeepSeek model
 
-InvestOne now uses the course gateway **DeepSeek-V4-Flash** (case-sensitive), with server-side endpoint `https://apim-ent207tc.azure-api.net/deepseek/openai/v1`. Calls require the `api-key` header, as well as an OpenAI-compatible bearer credential. Each visitor enters their own authorized group key in Settings. Key values are never committed to GitHub or embedded in public browser code, and the app does not offer unrestricted anonymous paid AI usage.
+InvestOne now uses the course gateway **DeepSeek-V4-Flash** (case-sensitive), with server-side endpoint `https://apim-ent207tc.azure-api.net/deepseek/openai/v1`. Calls require the `api-key` header, as well as an OpenAI-compatible bearer credential. The public web app uses one shared course key stored only in the Railway service configuration. Visitors do not enter a key, and its value is never committed to GitHub or embedded in browser code. Public AI use is rate limited. Web chat is kept only in the current page and is cleared when the page is refreshed or reopened; earlier stored web chat histories are purged at service startup.
 
-The course documentation describes a shared budget of **10,000 tokens per minute per group and 5,000,000 tokens per month**. The default output cap is set to 800 tokens to reduce quota consumption. Real provider-backed market data remains available to guests without a model key.
+The course documentation describes a shared budget of **10,000 tokens per minute per group and 5,000,000 tokens per month**. The public AI output cap is 240 tokens to reduce latency and quota use. The local desktop edition keeps its own user-supplied key and conversation history.
 
 In **Investor Digital Humans**, selecting Buffett-, Munger- or Graham-inspired analysis stays on the same page and opens a dedicated AI conversation. The talking avatars are original educational visuals with browser speech synthesis, not real-person likenesses or cloned voices.
 
@@ -88,7 +88,7 @@ The Go source under `src/` uses actual HTTPS provider responses and records prov
 | Financial news | Yahoo Finance RSS → Google News RSS | Headline/snippet results; source dates are shown |
 | SEC company filings and financial facts | SEC EDGAR submissions / XBRL companyfacts | Requires a **real SEC contact email**, entered in local Settings |
 | Community discussion | Public Reddit RSS | Unavailable if blocked or restricted; local evidence saving remains usable |
-| AI analysis | User-supplied ENT207 DeepSeek OpenAI-compatible API | Default `DeepSeek-V4-Flash`; actual key required |
+| AI analysis | ENT207 DeepSeek OpenAI-compatible API | Shared server key on the public site; user-supplied key in the desktop edition |
 
 **Independent evidence:** The [GitHub live-provider test run](https://github.com/changxuanyu26-collab/InvestOne_ENT207-/actions/runs/42665287680) successfully fetched actual SPY, NVDA and 600519.SS chart data, NVDA news and Reddit public posts on Nov 9, 2026 (UTC). The SEC and paid ENT207 DeepSeek calls were **not tested** in that run: no legitimate SEC contact email or user-paid AI key was supplied. Third-party availability may change; run the app's data-connection diagnostics on your Mac.
 

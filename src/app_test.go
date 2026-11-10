@@ -587,6 +587,22 @@ func TestNoKeyNoAI(t *testing.T) {
 		t.Fatal("AI accepted missing key")
 	}
 }
+func TestSharedPublicAILeavesNoChatHistory(t *testing.T) {
+	t.Setenv("INVESTONE_CLOUD", "1")
+	t.Setenv("INVESTONE_SHARED_AI_KEY", "fixture-public-key")
+	a := testApp(t, &fixtureProvider{})
+	gateway := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprint(w, `{"choices":[{"message":{"content":"Offline test reply [S1]."},"finish_reason":"stop"}]}`)
+	}))
+	defer gateway.Close()
+	a.aiURL = gateway.URL
+	res, err := a.chat(context.Background(), ChatRequest{Message:"Assess NVDA",Symbol:"NVDA",Persona:"assistant"}, true)
+	if err != nil || res.Content == "" { t.Fatalf("public AI request: %+v %v", res, err) }
+	if len(a.store.snapshot().Messages) != 0 { t.Fatal("public chat was retained in server state") }
+	if saved, err := os.ReadFile(a.store.path); err == nil && strings.Contains(string(saved), "Offline test reply") {
+		t.Fatal("public chat was written to disk")
+	}
+}
 func TestAIRequestContractAndPrivacy(t *testing.T) {
 	a := testApp(t, &fixtureProvider{})
 	secret := "TEST_KEY_PROTOCOL_984613"

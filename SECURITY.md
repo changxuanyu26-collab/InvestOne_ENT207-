@@ -6,6 +6,9 @@ Never upload real API keys, environment files, account identifiers, portfolio ex
 ## Model API
 The local desktop application holds the configured ENT207 DeepSeek API key in process memory and does not write it into the local JSON store. Requests send the question and selected source/profile context to the configured provider. The external provider may log or process requests under its own policies. Avoid adding confidential material to prompts.
 
+## Public web app
+The Railway website uses a shared course key stored in server configuration and never sends it to browsers. Public AI requests have rate limits. Chat messages are not persisted by the public service; the current page holds the visible conversation in memory and clears it on refresh. Aggregate visit counts do not store IP addresses, questions, or credentials.
+
 ## Local access model
 The desktop app is **localhost-only, single-user coursework software**, not a hardened cloud authentication solution. Its username is a convenience alias, not a password. Do not expose its Go HTTP port publicly.
 

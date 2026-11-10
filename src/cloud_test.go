@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -147,10 +149,20 @@ func TestCloudSharedAIAndVisitCounts(t *testing.T) {
 	t.Setenv("INVESTONE_CLOUD", "1")
 	t.Setenv("INVESTONE_SHARED_AI_KEY", "fixture-course-key")
 	root := t.TempDir()
+	oldPath := filepath.Join(root, strings.Repeat("a", 48)+".json")
+	oldStore, err := openStore(oldPath)
+	if err != nil { t.Fatal(err) }
+	if err := oldStore.update(func(s *State) error {
+		s.Messages = []Message{{Role:"user",Content:"OLD_CHAT_MUST_BE_ERASED",Persona:"assistant"}}
+		return nil
+	}); err != nil { t.Fatal(err) }
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	cloud, err := newCloudServer(ctx, root)
 	if err != nil { t.Fatal(err) }
+	if saved, err := os.ReadFile(oldPath); err != nil || strings.Contains(string(saved), "OLD_CHAT_MUST_BE_ERASED") {
+		t.Fatal("old public chat history remained on disk", err)
+	}
 	h := cloud.handler()
 	page := cloudRequest(h, "GET", "/app/", "")
 	if page.Code != 200 { t.Fatalf("app page: %d", page.Code) }
@@ -161,6 +173,10 @@ func TestCloudSharedAIAndVisitCounts(t *testing.T) {
 	}
 	if err := json.Unmarshal(guest.Body.Bytes(), &state); err != nil { t.Fatal(err) }
 	if !state.AIReady || !state.PublicAI { t.Fatal("public AI not enabled for guest") }
+	var stateBody struct { State State `json:"state"` }
+	if err := json.Unmarshal(guest.Body.Bytes(), &stateBody); err != nil || len(stateBody.State.Messages) != 0 {
+		t.Fatal("public state exposed chat history", err)
+	}
 	if strings.Contains(page.Body.String(), "fixture-course-key") || strings.Contains(guest.Body.String(), "fixture-course-key") {
 		t.Fatal("shared key leaked into page or state")
 	}

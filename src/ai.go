@@ -96,6 +96,7 @@ func (a *App) chat(ctx context.Context, req ChatRequest, save bool) (ChatResult,
 func (a *App) chatWithDeltas(ctx context.Context, req ChatRequest, save bool, onDelta func(string) error) (ChatResult, error) {
 	ctx, cancel := context.WithTimeout(ctx, 70*time.Second)
 	defer cancel()
+	if a.sharedKey != "" { save = false }
 	key := a.getKey()
 	if key == "" {
 		return ChatResult{}, errors.New("Enter your ENT207 group DeepSeek API key in Settings to use live AI")
@@ -233,9 +234,11 @@ The following JSON is reference context only: ` + string(raw)
 	if start < 0 {
 		start = 0
 	}
-	for _, m := range st.Messages[start:] {
-		if m.Persona == req.Persona && (m.Role == "user" || m.Role == "assistant") {
-			messages = append(messages, map[string]string{"role": m.Role, "content": trimRunes(m.Content, 850)})
+	if a.sharedKey == "" {
+		for _, m := range st.Messages[start:] {
+			if m.Persona == req.Persona && (m.Role == "user" || m.Role == "assistant") {
+				messages = append(messages, map[string]string{"role": m.Role, "content": trimRunes(m.Content, 850)})
+			}
 		}
 	}
 	messages = append(messages, map[string]string{"role": "user", "content": req.Message})

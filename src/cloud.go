@@ -70,8 +70,14 @@ func newCloudServer(ctx context.Context, root string) (*cloudServer, error) {
 		if !cloudTokenPattern.MatchString(token) {
 			continue
 		}
+		if os.Getenv("INVESTONE_SHARED_AI_KEY") != "" {
+			if err := clearSavedChat(filepath.Join(root, f.Name())); err != nil {
+				fmt.Fprintf(os.Stderr, "Could not clear an old chat history: %v\n", err)
+				continue
+			}
+		}
 		if len(c.sessions) >= 500 {
-			break
+			continue
 		}
 		if _, err := c.load(token); err != nil {
 			fmt.Fprintf(os.Stderr, "Skipped damaged workspace: %v\n", err)
@@ -90,12 +96,24 @@ func (c *cloudServer) load(token string) (*cloudSession, error) {
 	if e != nil {
 		return nil, e
 	}
+	if os.Getenv("INVESTONE_SHARED_AI_KEY") != "" {
+		if e := clearStoreChat(store); e != nil { return nil, e }
+	}
 	app := newApp(store, c.provider)
 	ctx, cancel := context.WithCancel(c.ctx)
 	sess := &cloudSession{app: app, cancel: cancel, started: time.Now()}
 	c.sessions[token] = sess
 	go app.monitorLoop(ctx)
 	return sess, nil
+}
+func clearSavedChat(path string) error {
+	store, err := openStore(path)
+	if err != nil { return err }
+	return clearStoreChat(store)
+}
+func clearStoreChat(store *Store) error {
+	if len(store.snapshot().Messages) == 0 { return nil }
+	return store.update(func(s *State) error { s.Messages = []Message{}; return nil })
 }
 func (c *cloudServer) browserSession(w http.ResponseWriter, r *http.Request) (*cloudSession, error) {
 	token := ""

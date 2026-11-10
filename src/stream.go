@@ -35,7 +35,7 @@ func (a *App) streamChat(w http.ResponseWriter, r *http.Request) {
 	if err:=emitStreamEvent(w,flusher,"status",map[string]string{"text":"Collecting live evidence…"});err!=nil{return}
 	ctx,cancel:=context.WithTimeout(r.Context(),80*time.Second)
 	defer cancel()
-	result,err:=a.chatWithDeltas(ctx,input,true,func(delta string) error {
+	result,err:=a.chatWithDeltas(ctx,input,a.sharedKey == "",func(delta string) error {
 		return emitStreamEvent(w,flusher,"delta",map[string]string{"text":delta})
 	})
 	if err!=nil {
