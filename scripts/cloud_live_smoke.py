@@ -52,12 +52,15 @@ news=research.get("news",[])
 assert news,research.get("errors")
 assert all(item.get("title") and item.get("url") for item in news[:3])
 print("REAL NEWS PASS:",len(news),flush=True)
+assert x.get("public_ai") is True and x.get("ai_ready") is True
+counts=a.get("/api/visits")
+assert counts.get("page_views",0)>0 and counts.get("browser_sessions",0)>0,counts
 try:
-    response=a.post("/api/chat",{"message":"Summarize NVDA","symbol":"NVDA","persona":"assistant","include_community":False})
-    raise AssertionError("Unexpected paid AI success without a key: "+str(response)[:100])
+    a.post("/api/key",{"key":"override-attempt"})
+    raise AssertionError("Public key replacement should be blocked")
 except urllib.error.HTTPError as ex:
-    assert ex.code in (400,401,422,502) and b"DeepSeek API key" in ex.read(),ex.code
-print("AI-KEY GUARD PASS (no paid AI request made)",flush=True)
+    assert ex.code==403,ex.code
+print("PUBLIC AI AND VISITS PASS: shared server key is active, aggregate counts persist; no paid AI request made",flush=True)
 
 # Exercise persistent automation with a non-triggering rule, without using AI credits.
 a.post("/api/rules",{"type":"price_below","symbol":"SPY","threshold":1,"keyword":"","auto_ai":False})

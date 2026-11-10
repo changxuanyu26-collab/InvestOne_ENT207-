@@ -48,11 +48,15 @@ with sync_playwright() as playwright:
  print("UI STREAMING PASS: progressive token rendering from a marked test fixture",flush=True)
 
  page.locator('nav a[href="#chat"]').click()
- page.locator("#chat-input").fill("Summarize the latest NVDA news in two sentences")
- page.locator('#chat-form button[type="submit"]').click()
- page.locator("#toast.err").wait_for(timeout=10000)
- assert "API key" in page.locator("#toast.err").inner_text()
- print("AI CHAT BUTTON PASS: missing-key message shown without a paid request",flush=True)
+ page.locator("#chat-form").wait_for(timeout=10000)
+ assert "shared public AI quota" in page.locator("#chat-form").inner_text()
+ page.goto(BASE+"/app/#settings",wait_until="load",timeout=30000)
+ page.locator("#page-content").get_by_text("Shared AI ready for all visitors").wait_for(timeout=10000)
+ assert page.locator("#key-form").count()==0
+ assert "Visits" in page.locator("footer").inner_text()
+ print("PUBLIC AI PASS: no visitor key input, aggregate visit counts visible; no paid request made",flush=True)
+ page.locator('nav a[href="#chat"]').click()
+ page.locator("#chat-form").wait_for(timeout=10000)
 
  page.locator('.core-link[href="#markets"]').click()
  page.locator("#research-data h2").filter(has_text="News and summaries").wait_for(timeout=45000)
