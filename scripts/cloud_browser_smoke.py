@@ -24,9 +24,11 @@ with sync_playwright() as playwright:
  page.locator(".persona-card").first.wait_for(timeout=10000)
  assert page.locator(".persona-card").count()==3
  assert page.locator(".avatar-mouth").count()==3
- page.get_by_role("button",name="Analyze with this framework →").first.click()
- assert "chat" in page.url
- page.locator("textarea#chat-input").wait_for(timeout=10000)
+ page.get_by_role("button",name="Select this framework").first.click()
+ assert page.url.endswith("/app/#personas"),"Choosing a digital human should not redirect to Chatbot: "+page.url
+ page.locator("#persona-form textarea#persona-input").wait_for(timeout=10000)
+ assert page.locator("#persona-form").is_visible()
+ assert page.locator(".persona-card.is-selected").count()==1
  assert not errors,errors
  # Reproduce the real bug: leave GitHub Pages and navigate to Railway
  # so Chromium sends Sec-Fetch-Site: cross-site on the document request.
@@ -41,7 +43,7 @@ with sync_playwright() as playwright:
  assert "Cross-site request blocked" not in external.locator("body").inner_text()
  print("CROSS-SITE GITHUB → RAILWAY NAVIGATION PASS",flush=True)
  from_github.close()
- print("DESKTOP PASS: landing, CTA, guest entry, 5 modules, key-setup link, digital avatars",flush=True)
+ print("DESKTOP PASS: landing, CTA, guest entry, 5 modules, key-setup link, in-page digital human conversations",flush=True)
  ctx.close()
  mobile=browser.new_context(viewport={"width":390,"height":844},is_mobile=True,device_scale_factor=2)
  p=mobile.new_page()
