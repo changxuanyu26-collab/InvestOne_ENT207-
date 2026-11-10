@@ -29,6 +29,7 @@ with sync_playwright() as playwright:
  page.locator("#persona-form textarea#persona-input").wait_for(timeout=10000)
  assert page.locator("#persona-form").is_visible()
  assert page.locator(".persona-card.is-selected").count()==1
+ assert "DeepSeek-V4-Flash" in page.locator("#persona-session").inner_text()
  # Browser-only synthetic SSE fixture verifies the rendering protocol; this
  # does not claim the paid school gateway itself was contacted.
  def fake_sse(route):
