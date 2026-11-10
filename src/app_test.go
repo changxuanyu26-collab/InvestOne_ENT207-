@@ -597,9 +597,12 @@ func TestAIRequestContractAndPrivacy(t *testing.T) {
 		if r.Header.Get("Authorization") != "Bearer "+secret {
 			t.Error("authorization")
 		}
+		if r.Header.Get("api-key") != secret {
+			t.Error("ENT207 Azure APIM gateway requires api-key header")
+		}
 		var body map[string]any
 		_ = json.NewDecoder(r.Body).Decode(&body)
-		if body["model"] != DefaultModel || body["max_tokens"] != float64(8192) || body["temperature"] != .7 {
+		if body["model"] != DefaultModel || body["max_tokens"] != float64(800) || body["temperature"] != .7 {
 			t.Error("bad default payload", body["model"])
 		}
 		msgs := body["messages"].([]any)
