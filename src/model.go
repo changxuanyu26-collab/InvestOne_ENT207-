@@ -123,7 +123,7 @@ func id() string {
 	return hex.EncodeToString(b)
 }
 func initialState() State {
-	return State{Schema: 1, Profile: Profile{Risk: "Moderate", Horizon: "3–5 years", Knowledge: "Beginner", Interests: "Technology, advanced manufacturing, sector allocation", Model: DefaultModel, MaxTokens: 800}, Watchlist: []string{"AAPL", "NVDA", "MSFT", "SPY", "QQQ"}, Cash: InitialCash, Holdings: []Holding{}, Trades: []Trade{}, Messages: []Message{}, Documents: []Document{}, Rules: []Rule{}, Notices: []Notice{}, Community: []Source{}}
+	return State{Schema: 1, Profile: Profile{Risk: "Moderate", Horizon: "3–5 years", Knowledge: "Beginner", Interests: "Technology, advanced manufacturing, sector allocation", Model: DefaultModel, MaxTokens: 400}, Watchlist: []string{"AAPL", "NVDA", "MSFT", "SPY", "QQQ"}, Cash: InitialCash, Holdings: []Holding{}, Trades: []Trade{}, Messages: []Message{}, Documents: []Document{}, Rules: []Rule{}, Notices: []Notice{}, Community: []Source{}}
 }
 func openStore(path string) (*Store, error) {
 	s := &Store{path: path, value: initialState()}
@@ -138,8 +138,8 @@ func openStore(path string) (*Store, error) {
 		// Prior local and cloud workspaces keep their user data while the
 		// ENT207 course model is switched to the gateway's exact model ID.
 		s.value.Profile.Model = DefaultModel
-		if s.value.Profile.MaxTokens > 1200 || s.value.Profile.MaxTokens < 256 {
-			s.value.Profile.MaxTokens = 800
+		if s.value.Profile.MaxTokens > 700 || s.value.Profile.MaxTokens < 128 {
+			s.value.Profile.MaxTokens = 400
 		}
 	} else if !os.IsNotExist(e) {
 		return nil, e
