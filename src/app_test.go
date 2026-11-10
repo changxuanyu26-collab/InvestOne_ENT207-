@@ -602,7 +602,7 @@ func TestAIRequestContractAndPrivacy(t *testing.T) {
 		}
 		var body map[string]any
 		_ = json.NewDecoder(r.Body).Decode(&body)
-		if body["model"] != DefaultModel || body["max_tokens"] != float64(800) || body["temperature"] != .7 {
+		if body["model"] != DefaultModel || body["max_tokens"] != float64(400) || body["temperature"] != .7 {
 			t.Error("bad default payload", body["model"])
 		}
 		msgs := body["messages"].([]any)
