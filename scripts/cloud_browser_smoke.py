@@ -61,6 +61,7 @@ with sync_playwright() as playwright:
 
  page.locator('nav a[href="#chat"]').click()
  page.locator('.core-link[href="#quant"]').click()
+ page.locator('#quant-form').wait_for(timeout=10000)
  assert "Sector Allocation" in page.locator("#page-content").inner_text()
  page.locator('#quant-form button[type="submit"]').click()
  page.locator("#quant-result .metric").first.wait_for(timeout=90000)
@@ -68,6 +69,7 @@ with sync_playwright() as playwright:
  print("SECTOR ALLOCATION AND BACKTEST BUTTON PASS",flush=True)
 
  page.locator('nav a[href="#automation"]').click()
+ page.locator('#rule-form').wait_for(timeout=10000)
  page.locator('#rule-form input[name="symbol"]').fill("SPY")
  page.locator('#rule-form select[name="type"]').select_option("price_below")
  page.locator('#rule-form input[name="threshold"]').fill("1")
