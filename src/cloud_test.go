@@ -77,7 +77,7 @@ func TestCloudLandingAndSessionIsolation(t *testing.T) {
 	if cookieB.Value == cookieA.Value {
 		t.Fatal("Visitors share a browser session")
 	}
-	payload := `{"risk":"Conservative","horizon":"5+ years","knowledge":"Intermediate","interests":"Technology","email":"","model":"deepseek/deepseek-v4.1-flash","max_tokens":8192}`
+	payload := `{"risk":"Conservative","horizon":"5+ years","knowledge":"Intermediate","interests":"Technology","email":"","model":"DeepSeek-V4-Flash","max_tokens":800}`
 	update := cloudRequest(h, "POST", "/api/profile", payload, cookieA, authA)
 	if update.Code != 200 {
 		t.Fatalf("Profile update: %d %s", update.Code, update.Body.String())
