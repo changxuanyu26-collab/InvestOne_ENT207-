@@ -19,7 +19,7 @@ with sync_playwright() as playwright:
  actual=page.locator("nav .nav-item").all_text_contents()
  expected=["AI Investment Chatbot","Personalised Intelligence","Continuous Automation","Community Integration","Investor Digital Humans"]
  assert all(any(e in item for item in actual) for e in expected),actual
- assert page.get_by_role("link",name="＋ Connect Highway AI Key").count()==1
+ assert page.get_by_role("link",name="＋ Connect ENT207 DeepSeek AI Key").count()==1
  page.get_by_role("link",name="Investor Digital Humans").click()
  page.locator(".persona-card").first.wait_for(timeout=10000)
  assert page.locator(".persona-card").count()==3
