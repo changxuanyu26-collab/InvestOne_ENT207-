@@ -16,8 +16,8 @@ import (
 )
 
 const Version = "2.1.0-rc1"
-const DefaultModel = "deepseek/deepseek-v4.1-flash"
-const APIBase = "https://api.highwayapi.ai/openai"
+const DefaultModel = "DeepSeek-V4-Flash"
+const APIBase = "https://apim-ent207tc.azure-api.net/deepseek/openai/v1"
 const Username = "红豆薏米水"
 const InitialCash = 100000.0
 const PaperFee = 0.0005
@@ -123,7 +123,7 @@ func id() string {
 	return hex.EncodeToString(b)
 }
 func initialState() State {
-	return State{Schema: 1, Profile: Profile{Risk: "Moderate", Horizon: "3–5 years", Knowledge: "Beginner", Interests: "Technology, advanced manufacturing, sector allocation", Model: DefaultModel, MaxTokens: 8192}, Watchlist: []string{"AAPL", "NVDA", "MSFT", "SPY", "QQQ"}, Cash: InitialCash, Holdings: []Holding{}, Trades: []Trade{}, Messages: []Message{}, Documents: []Document{}, Rules: []Rule{}, Notices: []Notice{}, Community: []Source{}}
+	return State{Schema: 1, Profile: Profile{Risk: "Moderate", Horizon: "3–5 years", Knowledge: "Beginner", Interests: "Technology, advanced manufacturing, sector allocation", Model: DefaultModel, MaxTokens: 800}, Watchlist: []string{"AAPL", "NVDA", "MSFT", "SPY", "QQQ"}, Cash: InitialCash, Holdings: []Holding{}, Trades: []Trade{}, Messages: []Message{}, Documents: []Document{}, Rules: []Rule{}, Notices: []Notice{}, Community: []Source{}}
 }
 func openStore(path string) (*Store, error) {
 	s := &Store{path: path, value: initialState()}
@@ -134,6 +134,12 @@ func openStore(path string) (*Store, error) {
 		}
 		if s.value.Schema != 1 {
 			return nil, errors.New("Unsupported local data version; original file has not been overwritten")
+		}
+		// Prior local and cloud workspaces keep their user data while the
+		// ENT207 course model is switched to the gateway's exact model ID.
+		s.value.Profile.Model = DefaultModel
+		if s.value.Profile.MaxTokens > 1200 || s.value.Profile.MaxTokens < 256 {
+			s.value.Profile.MaxTokens = 800
 		}
 	} else if !os.IsNotExist(e) {
 		return nil, e
