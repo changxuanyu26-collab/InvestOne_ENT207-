@@ -27,6 +27,8 @@ type cloudSession struct {
 	mu      sync.Mutex
 	started time.Time
 	hits    int
+	aiStarted time.Time
+	aiHits int
 }
 
 type cloudServer struct {
@@ -36,6 +38,8 @@ type cloudServer struct {
 	dataDir  string
 	ctx      context.Context
 	static   http.Handler
+	visits   *visitTracker
+	aiGate   chan struct{}
 }
 
 func newCloudServer(ctx context.Context, root string) (*cloudServer, error) {
@@ -49,7 +53,10 @@ func newCloudServer(ctx context.Context, root string) (*cloudServer, error) {
 	if e != nil {
 		return nil, e
 	}
-	c := &cloudServer{sessions: map[string]*cloudSession{}, provider: newLiveProvider(), dataDir: root, ctx: ctx, static: http.FileServer(http.FS(sub))}
+	c := &cloudServer{sessions: map[string]*cloudSession{}, provider: newLiveProvider(), dataDir: root, ctx: ctx, static: http.FileServer(http.FS(sub)), visits: newVisitTracker(root), aiGate: make(chan struct{}, 2)}
+	if key := strings.TrimSpace(os.Getenv("INVESTONE_SHARED_AI_KEY")); key != "" && !keyValid(key) {
+		return nil, errors.New("invalid server-side AI key configuration")
+	}
 	// Recover saved browser workspaces after a restart so monitoring can continue.
 	files, e := os.ReadDir(root)
 	if e != nil {
@@ -98,6 +105,7 @@ func (c *cloudServer) browserSession(w http.ResponseWriter, r *http.Request) (*c
 	if token == "" {
 		token = id()
 		http.SetCookie(w, &http.Cookie{Name: cloudCookie, Value: token, Path: "/", MaxAge: 30 * 86400, Secure: true, HttpOnly: true, SameSite: http.SameSiteLaxMode})
+		c.visits.browserSession()
 	}
 	return c.load(token)
 }
@@ -111,6 +119,20 @@ func (s *cloudSession) withinLimit() bool {
 	}
 	s.hits++
 	return s.hits <= 150
+}
+func (s *cloudSession) allowAI() bool {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	now := time.Now()
+	if now.Sub(s.aiStarted) > 10*time.Minute {
+		s.aiStarted = now
+		s.aiHits = 0
+	}
+	if s.aiHits >= 6 {
+		return false
+	}
+	s.aiHits++
+	return true
 }
 func (c *cloudServer) handler() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -160,6 +182,10 @@ func (c *cloudServer) handler() http.Handler {
 				http.Error(w, "Missing application request header", 403)
 				return
 			}
+			if r.URL.Path == "/api/visits" && r.Method == http.MethodGet {
+				send(w, 200, c.visits.snapshot())
+				return
+			}
 			s, e := c.browserSession(w, r)
 			if e != nil {
 				fail(w, 500, errors.New("Workspace storage unavailable"))
@@ -169,8 +195,25 @@ func (c *cloudServer) handler() http.Handler {
 				fail(w, 429, errors.New("Too many requests; try again shortly"))
 				return
 			}
+			if r.Method == http.MethodPost && (r.URL.Path == "/api/chat" || r.URL.Path == "/api/chat/stream") && s.app.sharedKey != "" {
+				select {
+				case c.aiGate <- struct{}{}:
+					defer func() { <-c.aiGate }()
+				default:
+					fail(w, 429, errors.New("The public AI service is busy; try again shortly"))
+					return
+				}
+				if !s.allowAI() {
+					fail(w, 429, errors.New("This browser has reached its AI request limit; try again in 10 minutes"))
+					return
+				}
+				if !c.visits.allowAI() {
+					fail(w, 429, errors.New("The shared daily AI quota has been reached; try again tomorrow"))
+					return
+				}
+			}
 			// A first-time visitor can explore real financial data without an
-			// account. Paid AI research still requires their own API key.
+			// account. The public deployment can use a server-managed AI key.
 			if r.URL.Path == "/api/state" && r.Method == http.MethodGet && !s.app.authorized(r) {
 				token := id()
 				s.app.mu.Lock()
@@ -196,6 +239,9 @@ func (c *cloudServer) handler() http.Handler {
 			w.Header().Set("Content-Type", "text/html; charset=utf-8")
 			_, _ = w.Write(b)
 		case "/app", "/app/", "/index.html":
+			if r.Method == http.MethodGet {
+				c.visits.pageView()
+			}
 			b, e := webFiles.ReadFile("web/index.html")
 			if e != nil {
 				http.Error(w, "App page unavailable", 500)

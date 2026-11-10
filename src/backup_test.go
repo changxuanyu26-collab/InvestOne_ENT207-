@@ -65,6 +65,18 @@ func TestFallbackGoogleNews(t *testing.T) {
 		t.Fatalf("bad rss: %+v %v", items, e)
 	}
 }
+func TestQuestionSpecificNewsSearch(t *testing.T) {
+	p := backupFixtureProvider(func(r *http.Request) (*http.Response, error) {
+		if r.URL.Hostname() != "news.google.com" || r.URL.Query().Get("q") != "黄仁勋出轨对股票有什么影响" || r.URL.Query().Get("hl") != "zh-CN" {
+			t.Fatalf("unexpected question search: %s", r.URL.String())
+		}
+		return response(200, `<rss version="2.0"><channel><item><title>NVIDIA publishes a company statement</title><link>https://news.google.com/articles/statement</link><pubDate>Mon, 09 Nov 2026 09:00:00 GMT</pubDate></item></channel></rss>`), nil
+	})
+	items, err := p.SearchNews(context.Background(), "黄仁勋出轨对股票有什么影响")
+	if err != nil || len(items) != 1 || items[0].Publisher == "" {
+		t.Fatalf("question-specific search failed: %+v %v", items, err)
+	}
+}
 func TestAllFailedNeverSynthetic(t *testing.T) {
 	p := backupFixtureProvider(func(r *http.Request) (*http.Response, error) { return nil, errors.New("dial test unavailable") })
 	c, e := p.Market(context.Background(), "NVDA", "1mo")

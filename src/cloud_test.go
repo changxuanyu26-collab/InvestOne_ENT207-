@@ -142,3 +142,39 @@ func TestCloudCrossSiteTopLevelNavigation(t *testing.T) {
 		}
 	}
 }
+
+func TestCloudSharedAIAndVisitCounts(t *testing.T) {
+	t.Setenv("INVESTONE_CLOUD", "1")
+	t.Setenv("INVESTONE_SHARED_AI_KEY", "fixture-course-key")
+	root := t.TempDir()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	cloud, err := newCloudServer(ctx, root)
+	if err != nil { t.Fatal(err) }
+	h := cloud.handler()
+	page := cloudRequest(h, "GET", "/app/", "")
+	if page.Code != 200 { t.Fatalf("app page: %d", page.Code) }
+	guest := cloudRequest(h, "GET", "/api/state", "")
+	var state struct {
+		AIReady bool `json:"ai_ready"`
+		PublicAI bool `json:"public_ai"`
+	}
+	if err := json.Unmarshal(guest.Body.Bytes(), &state); err != nil { t.Fatal(err) }
+	if !state.AIReady || !state.PublicAI { t.Fatal("public AI not enabled for guest") }
+	if strings.Contains(page.Body.String(), "fixture-course-key") || strings.Contains(guest.Body.String(), "fixture-course-key") {
+		t.Fatal("shared key leaked into page or state")
+	}
+	visits := cloudRequest(h, "GET", "/api/visits", "")
+	var counts visitCounts
+	if err := json.Unmarshal(visits.Body.Bytes(), &counts); err != nil { t.Fatal(err) }
+	if counts.PageViews != 1 || counts.BrowserSessions != 1 {
+		t.Fatalf("incorrect aggregate visit counts: %+v", counts)
+	}
+	if saved := newVisitTracker(root).snapshot(); saved.PageViews != 1 || saved.BrowserSessions != 1 {
+		t.Fatalf("visit counts did not persist: %+v", saved)
+	}
+	cookie := pickCookie(t, guest, cloudCookie)
+	auth := pickCookie(t, guest, "investone_session")
+	reject := cloudRequest(h, "POST", "/api/key", `{"key":"override"}`, cookie, auth)
+	if reject.Code != 403 { t.Fatalf("public key override should be blocked: %d", reject.Code) }
+}

@@ -135,7 +135,7 @@ func (a *App) api(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if path == "/api/state" && r.Method == "GET" {
-		send(w, 200, map[string]any{"state": a.store.snapshot(), "ai_ready": a.getKey() != "", "version": Version, "username": Username, "api_base": APIBase, "mode": "LIVE_DATA_ONLY"})
+		send(w, 200, map[string]any{"state": a.store.snapshot(), "ai_ready": a.getKey() != "", "public_ai": a.sharedKey != "", "version": Version, "username": Username, "api_base": APIBase, "mode": "LIVE_DATA_ONLY"})
 		return
 	}
 	if path == "/api/logout" && r.Method == "POST" {
@@ -262,6 +262,10 @@ func (a *App) api(w http.ResponseWriter, r *http.Request) {
 	case "/api/pdf-text":
 		a.pdfText(w, r)
 	case "/api/key":
+		if a.sharedKey != "" {
+			fail(w, 403, errors.New("The public website manages its AI connection automatically"))
+			return
+		}
 		var v struct {
 			Key string `json:"key"`
 		}

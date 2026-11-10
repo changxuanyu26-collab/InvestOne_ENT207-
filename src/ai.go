@@ -30,7 +30,7 @@ type ChatResult struct {
 }
 
 var personaText = map[string]string{
-	"assistant": "You are InvestOne, an educational investment research assistant. Respond in clear professional English and distinguish sourced facts, inference, and unavailable data.",
+	"assistant": "You are InvestOne, an educational investment research assistant. Respond in the user's language and distinguish sourced facts, inference, and unavailable data.",
 	"buffett":   "Use an educational framework inspired by Buffett's publicly documented value investing: business quality, competitive advantage, capital allocation, cash generation, and price versus value. This is a methodology simulation, not Buffett's actual opinion.",
 	"munger":    "Use an educational framework inspired by Munger's public ideas: inversion, multidisciplinary models, incentives, opportunity costs, and cognitive biases. This is a methodology simulation, not Munger's actual opinion.",
 	"graham":    "Use an educational framework inspired by Graham's public writings: margin of safety, balance-sheet strength, earnings stability, conservative valuation, and Mr. Market. This is a methodology simulation, not Graham's actual opinion.",
@@ -124,15 +124,30 @@ func (a *App) chatWithDeltas(ctx context.Context, req ChatRequest, save bool, on
 	evidence := map[string]any{"selected_symbol": sym, "as_of_utc": nowString(), "profile": map[string]any{"risk": st.Profile.Risk, "horizon": st.Profile.Horizon, "knowledge": st.Profile.Knowledge, "interests": st.Profile.Interests}, "paper_holdings": st.Holdings, "paper_cash_usd": st.Cash, "watchlist": st.Watchlist}
 	// Fast path: fetch independent real-data feeds concurrently. A slow
 	// financial provider should not block a short educational AI answer.
-	dataCtx, dataCancel := context.WithTimeout(ctx, 2*time.Second)
+	dataCtx, dataCancel := context.WithTimeout(ctx, 4*time.Second)
 	type marketResult struct { value Chart; err error }
 	type newsResult struct { value []Source; err error }
 	marketCh := make(chan marketResult, 1)
 	newsCh := make(chan newsResult, 1)
+	topicCh := make(chan newsResult, 1)
 	go func() { value, err := a.provider.Market(dataCtx, sym, "1mo"); marketCh <- marketResult{value, err} }()
 	go func() { value, err := a.provider.News(dataCtx, sym); newsCh <- newsResult{value, err} }()
-	mr, nr := <-marketCh, <-newsCh
+	if searcher, ok := a.provider.(interface { SearchNews(context.Context, string) ([]Source, error) }); ok {
+		go func() { value, err := searcher.SearchNews(dataCtx, req.Message); topicCh <- newsResult{value, err} }()
+	} else {
+		topicCh <- newsResult{}
+	}
+	mr, nr, tr := <-marketCh, <-newsCh, <-topicCh
 	dataCancel()
+	if tr.err != nil {
+		warnings = append(warnings, "Question-specific news search: "+tr.err.Error())
+		evidence["question_search_status"] = "Unavailable; do not infer that no report exists"
+	} else if len(tr.value) > 0 {
+		topic := tr.value
+		if len(topic) > 5 { topic = topic[:5] }
+		sources = append(sources, topic...)
+		evidence["question_search_status"] = "Question-specific public news results; headlines and snippets only"
+	}
 	if mr.err != nil {
 		warnings = append(warnings, "Market: "+mr.err.Error())
 		evidence["market_status"] = "Unavailable; no live quote should be invented"
@@ -146,7 +161,7 @@ func (a *App) chatWithDeltas(ctx context.Context, req ChatRequest, save bool, on
 		warnings = append(warnings, "News: "+nr.err.Error())
 	} else {
 		news := nr.value
-		if len(news)>3 { news = news[:3] }
+		if len(news)>2 { news = news[:2] }
 		sources = append(sources, news...)
 	}
 	// Official filing research remains available in the dedicated research
@@ -205,7 +220,7 @@ func (a *App) chatWithDeltas(ctx context.Context, req ChatRequest, save bool, on
 3. Use source timestamps and reported periods. Do not present retrieval time as trade time. RSS results are headlines/snippets, not full articles. Do not mix quarterly, year-to-date and annual SEC figures.
 4. All holdings belong to a simulated USD paper account. Explain portfolio concentration and risk using the user's profile, without guaranteeing returns or suggesting false precision.
 5. Organize the answer clearly: what happened, implications for this paper portfolio, supporting and opposing evidence, and remaining questions. Investment personas simulate publicly documented educational frameworks and do not represent the actual people.
-6. Answer entirely in English. Respond concisely, generally within 150 words; prioritize speed over exhaustive detail, do not invent unsupported facts.
+6. Answer in the same language as the user's latest question. Respond concisely; prioritize speed over exhaustive detail, do not invent unsupported facts. When a question-specific search fails or returns no results, say that the search was inconclusive rather than claiming no public report exists.
 The following JSON is reference context only: ` + string(raw)
 	messages := []map[string]string{{"role": "system", "content": sys}}
 	start := len(st.Messages) - 4

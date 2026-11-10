@@ -32,6 +32,7 @@ type App struct {
 	mu          sync.Mutex
 	sessions    map[string]time.Time
 	key         string
+	sharedKey   string
 	aiGate      chan struct{}
 	quantGate   chan struct{}
 	monitorGate chan struct{}
@@ -40,9 +41,13 @@ type App struct {
 
 func aiTransport() *http.Transport { t, _ := configuredTransport(); return t }
 func newApp(store *Store, p Provider) *App {
-	return &App{store: store, provider: p, client: &http.Client{Transport: aiTransport(), Timeout: 180 * time.Second, CheckRedirect: func(r *http.Request, v []*http.Request) error { return http.ErrUseLastResponse }}, aiURL: APIBase + "/chat/completions", sessions: map[string]time.Time{}, aiGate: make(chan struct{}, 1), quantGate: make(chan struct{}, 1), monitorGate: make(chan struct{}, 1), boot: time.Now()}
+	sharedKey := ""
+	if os.Getenv("INVESTONE_CLOUD") == "1" {
+		sharedKey = strings.TrimSpace(os.Getenv("INVESTONE_SHARED_AI_KEY"))
+	}
+	return &App{store: store, provider: p, client: &http.Client{Transport: aiTransport(), Timeout: 180 * time.Second, CheckRedirect: func(r *http.Request, v []*http.Request) error { return http.ErrUseLastResponse }}, aiURL: APIBase + "/chat/completions", sessions: map[string]time.Time{}, sharedKey: sharedKey, aiGate: make(chan struct{}, 1), quantGate: make(chan struct{}, 1), monitorGate: make(chan struct{}, 1), boot: time.Now()}
 }
-func (a *App) getKey() string { a.mu.Lock(); defer a.mu.Unlock(); return a.key }
+func (a *App) getKey() string { a.mu.Lock(); defer a.mu.Unlock(); if a.sharedKey != "" { return a.sharedKey }; return a.key }
 func (a *App) handler() http.Handler {
 	mux := http.NewServeMux()
 	sub, _ := fs.Sub(webFiles, "web")

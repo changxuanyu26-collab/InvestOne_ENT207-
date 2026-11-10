@@ -363,6 +363,35 @@ func (p *liveProvider) News(ctx context.Context, s string) ([]Source, error) {
 	}
 	return nil, errors.New(strings.Join(errs, " | "))
 }
+// SearchNews retrieves question-specific public reports. It uses the user's
+// words as a search query and returns source links and RSS excerpts only; the
+// model does not receive an invented article body.
+func (p *liveProvider) SearchNews(ctx context.Context, question string) ([]Source, error) {
+	question = strings.TrimSpace(trimRunes(question, 140))
+	if question == "" {
+		return nil, errors.New("Empty news search")
+	}
+	locale := "hl=en-US&gl=US&ceid=US:en"
+	for _, r := range question {
+		if r >= 0x3400 && r <= 0x9fff {
+			locale = "hl=zh-CN&gl=US&ceid=US:zh-Hans"
+			break
+		}
+	}
+	u := "https://news.google.com/rss/search?q=" + url.QueryEscape(question) + "&" + locale
+	b, err := p.fetch(ctx, u, "Mozilla/5.0 (InvestOne/1.2 research)", 10*time.Minute)
+	if err != nil {
+		return nil, err
+	}
+	items, err := parseFeed(b, "news", "Google News RSS · question search")
+	if err != nil {
+		return nil, err
+	}
+	if len(items) == 0 {
+		return nil, errors.New("No question-specific news results were returned")
+	}
+	return items, nil
+}
 func (p *liveProvider) Community(ctx context.Context, s string) ([]Source, error) {
 	s, e := symbol(s)
 	if e != nil {
