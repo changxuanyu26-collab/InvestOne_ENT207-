@@ -33,10 +33,10 @@ with sync_playwright() as playwright:
  # Browser-only synthetic SSE fixture verifies the rendering protocol; this
  # does not claim the paid school gateway itself was contacted.
  def fake_sse(route):
-  body='event: status\\ndata: {"text":"Preparing"}\\n\\n'
-  body+='event: delta\\ndata: {"text":"FAST STREAM "}\\n\\n'
-  body+='event: delta\\ndata: {"text":"WORKS"}\\n\\n'
-  body+='event: complete\\ndata: {"content":"FAST STREAM WORKS","warnings":[],"sources":[]}\\n\\n'
+  body='event: status\ndata: {"text":"Preparing"}\n\n'
+  body+='event: delta\ndata: {"text":"FAST STREAM "}\n\n'
+  body+='event: delta\ndata: {"text":"WORKS"}\n\n'
+  body+='event: complete\ndata: {"content":"FAST STREAM WORKS","warnings":[],"sources":[]}\n\n'
   route.fulfill(status=200,content_type="text/event-stream",body=body)
  page.route("**/api/chat/stream",fake_sse)
  streamed=page.evaluate("""async () => {
