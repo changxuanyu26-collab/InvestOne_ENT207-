@@ -29,6 +29,23 @@ with sync_playwright() as playwright:
  page.locator("#persona-form textarea#persona-input").wait_for(timeout=10000)
  assert page.locator("#persona-form").is_visible()
  assert page.locator(".persona-card.is-selected").count()==1
+ # Browser-only synthetic SSE fixture verifies the rendering protocol; this
+ # does not claim the paid school gateway itself was contacted.
+ def fake_sse(route):
+  body='event: status\\ndata: {"text":"Preparing"}\\n\\n'
+  body+='event: delta\\ndata: {"text":"FAST STREAM "}\\n\\n'
+  body+='event: delta\\ndata: {"text":"WORKS"}\\n\\n'
+  body+='event: complete\\ndata: {"content":"FAST STREAM WORKS","warnings":[],"sources":[]}\\n\\n'
+  route.fulfill(status=200,content_type="text/event-stream",body=body)
+ page.route("**/api/chat/stream",fake_sse)
+ streamed=page.evaluate("""async () => {
+   const r=await streamAIRequest({message:"test",symbol:"SPY",persona:"buffett",include_community:false},"#persona-messages");
+   return {content:r.content,visible:document.querySelector("#persona-messages")?.textContent.includes("FAST STREAM WORKS")};
+ }""")
+ assert streamed["content"]=="FAST STREAM WORKS" and streamed["visible"],streamed
+ page.unroute("**/api/chat/stream")
+ print("UI STREAMING PASS: progressive token rendering from a marked test fixture",flush=True)
+
  assert not errors,errors
  # Reproduce the real bug: leave GitHub Pages and navigate to Railway
  # so Chromium sends Sec-Fetch-Site: cross-site on the document request.
