@@ -48,6 +48,54 @@ function speakText(text){
 }
 
 async function api(path,body){const opts={headers:{'X-InvestOne':'1'},credentials:'same-origin'};if(body!==undefined){opts.method='POST';opts.headers['Content-Type']='application/json';opts.body=JSON.stringify(body);}const r=await fetch('/api'+path,opts);let data;try{data=await r.json();}catch{throw Error('Unexpected local service response. Please reopen InvestOne.');}if(!r.ok){const e=Error(data.error||'Request failed');e.status=r.status;throw e;}return data;}
+async function streamAIRequest(input, target){
+ const response=await fetch('/api/chat/stream',{
+  method:'POST',credentials:'same-origin',
+  headers:{'X-InvestOne':'1','Content-Type':'application/json','Accept':'text/event-stream'},
+  body:JSON.stringify(input)
+ });
+ if(!response.ok){
+  let detail;try{detail=await response.json()}catch{detail={error:'Unable to connect to the ENT207 DeepSeek service'}}
+  throw Error(detail.error||'AI request rejected');
+ }
+ if(!response.body)throw Error('Streaming is not supported by this browser');
+ const live=document.querySelector(target);
+ let contentBox=null;
+ if(live){
+  const draft=document.createElement('div');draft.className='bubble assistant streaming';
+  const heading=document.createElement('div');heading.className='who';heading.textContent='ENT207 DeepSeek · live response';
+  contentBox=document.createElement('div');contentBox.className='body';contentBox.textContent='';
+  draft.append(heading,contentBox);live.append(draft);live.scrollTop=live.scrollHeight;
+ }
+ const reader=response.body.getReader(),decoder=new TextDecoder();
+ let pending='',complete=null;
+ const handle=(block)=>{
+  const lines=block.split(/\r?\n/);
+  const kind=lines.find(x=>x.startsWith('event:'))?.slice(6).trim();
+  const data=lines.filter(x=>x.startsWith('data:')).map(x=>x.slice(5).trim()).join('\n');
+  if(!data)return;
+  const payload=JSON.parse(data);
+  if(kind==='delta'){if(contentBox){contentBox.textContent+=payload.text||'';live.scrollTop=live.scrollHeight;}}
+  else if(kind==='error')throw Error(payload.error||'AI streaming failed');
+  else if(kind==='complete')complete=payload;
+ };
+ try {
+  while(true){
+   const {value,done}=await reader.read();
+   if(done)break;
+   pending+=decoder.decode(value,{stream:true});
+   let index;
+   while((index=pending.indexOf('\n\n'))!==-1){
+    const frame=pending.slice(0,index);pending=pending.slice(index+2);
+    handle(frame);
+   }
+  }
+  if(pending.trim())handle(pending);
+ }finally{reader.releaseLock();}
+ if(!complete)throw Error('AI response ended unexpectedly; please check the network');
+ return complete;
+}
+
 function toast(msg,err=false){const el=$('#toast');el.textContent=msg;el.className='visible'+(err?' err':'');clearTimeout(toast.t);toast.t=setTimeout(()=>el.className='',6500);}
 async function loadState(){session=await api('/state');state=session.state;}
 function go(p){if(!nav.some(n=>n[0]===p)&&!toolNav.some(n=>n[0]===p))p='chat';if(location.hash==='#'+p){render();}else{location.hash=p;}}
@@ -121,7 +169,7 @@ case 'persona-form':{
  const box=$('#persona-messages');
  if(box){box.innerHTML+=messageBubble({role:'user',content:question,time:new Date().toISOString(),persona:chosen})+'<div id="persona-progress" class="progress"></div>';box.scrollTop=box.scrollHeight;}
  try{
-  const result=await api('/chat',{message:question,symbol:selected,persona:chosen,include_community:false});
+  const result=await streamAIRequest({message:question,symbol:selected,persona:chosen,include_community:false},'#persona-messages');
   await loadState();
   if(page==='personas'){render();const updated=$('#persona-messages');if(updated)updated.scrollTop=updated.scrollHeight;}
   if(result.warnings?.length)toast(result.warnings.join('; '));else toast('Framework analysis completed and saved');
@@ -133,7 +181,7 @@ case 'persona-form':{
  }
  break;
 }
-case 'chat-form':{if(chatBusy)break;chatBusy=true;selected=$('#chat-symbol').value.trim().toUpperCase();persona=$('#chat-persona').value;const question=f.message;const box=$('#messages');box.innerHTML+=messageBubble({role:'user',content:question,time:new Date().toISOString(),persona})+'<div id="chat-progress"><div class="progress"></div><p class="hint">Retrieving evidence and contacting ENT207 DeepSeek; requests are not automatically retried.</p></div>';box.scrollTop=box.scrollHeight;$('#chat-input').value='';try{const result=await api('/chat',{message:question,symbol:selected,persona,include_community:fd.has('community')});await loadState();if(page==='chat')render();if(result.warnings.length)toast(result.warnings.join('；'));else toast('Analysis completed and saved to local chat history');}finally{chatBusy=false;$('#chat-progress')?.remove();if(page==='chat'){const b=$('#chat-form button[type="submit"]');if(b){b.disabled=false;b.textContent='Send and analyze ↗';}}}break;}
+case 'chat-form':{if(chatBusy)break;chatBusy=true;selected=$('#chat-symbol').value.trim().toUpperCase();persona=$('#chat-persona').value;const question=f.message;const box=$('#messages');box.innerHTML+=messageBubble({role:'user',content:question,time:new Date().toISOString(),persona})+'<div id="chat-progress"><div class="progress"></div><p class="hint">Retrieving evidence and contacting ENT207 DeepSeek; requests are not automatically retried.</p></div>';box.scrollTop=box.scrollHeight;$('#chat-input').value='';try{const result=await streamAIRequest({message:question,symbol:selected,persona,include_community:fd.has('community')},'#messages');await loadState();if(page==='chat')render();if(result.warnings.length)toast(result.warnings.join('；'));else toast('Analysis completed and saved to local chat history');}finally{chatBusy=false;$('#chat-progress')?.remove();if(page==='chat'){const b=$('#chat-form button[type="submit"]');if(b){b.disabled=false;b.textContent='Send and analyze ↗';}}}break;}
 case 'quant-form':{const config={universe:f.universe,range:f.range,top_n:Number(f.top_n),fee_bps:Number(f.fee_bps),momentum:Number(f.momentum),low_vol:Number(f.low_vol),trend:Number(f.trend),risk_off:fd.has('risk_off')};$('#quant-status').innerHTML='<div class="progress"></div><div class="hint">Fetching real historical data for the complete universe and running the backtest…</div>';try{quantResult=await api('/quant',config);if(page==='quant'&&$('#quant-result'))$('#quant-result').innerHTML=quantResults(quantResult);toast('Backtest completed; results and sources are available for export');}finally{if($('#quant-status'))$('#quant-status').innerHTML='';}break;}
 }}catch(e){toast(e.message,true);if(e.status===401&&form.id!=='login-form'){state=null;session=null;loginView();}if(form.id==='quant-form'&&$('#quant-result'))$('#quant-result').innerHTML=notice(e.message,'error');}finally{if(button?.isConnected){button.disabled=false;button.textContent=old;}}});
 document.addEventListener('click',async ev=>{const el=ev.target.closest('[data-action]');if(!el||el.disabled)return;const act=el.dataset.action,value=el.dataset.value;const old=el.textContent;let lock=false;try{switch(act){
