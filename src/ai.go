@@ -124,7 +124,7 @@ func (a *App) chatWithDeltas(ctx context.Context, req ChatRequest, save bool, on
 	evidence := map[string]any{"selected_symbol": sym, "as_of_utc": nowString(), "profile": map[string]any{"risk": st.Profile.Risk, "horizon": st.Profile.Horizon, "knowledge": st.Profile.Knowledge, "interests": st.Profile.Interests}, "paper_holdings": st.Holdings, "paper_cash_usd": st.Cash, "watchlist": st.Watchlist}
 	// Fast path: fetch independent real-data feeds concurrently. A slow
 	// financial provider should not block a short educational AI answer.
-	dataCtx, dataCancel := context.WithTimeout(ctx, 5*time.Second)
+	dataCtx, dataCancel := context.WithTimeout(ctx, 2*time.Second)
 	type marketResult struct { value Chart; err error }
 	type newsResult struct { value []Source; err error }
 	marketCh := make(chan marketResult, 1)
@@ -189,7 +189,14 @@ func (a *App) chatWithDeltas(ctx context.Context, req ChatRequest, save bool, on
 	for i := range sources {
 		sources[i].ID = fmt.Sprintf("S%d", i+1)
 	}
-	evidence["sources"] = sources
+	// Keep the full sources for the displayed evidence list, but give the
+	// model short excerpts so a long article cannot delay every reply.
+	promptSources := make([]Source, len(sources))
+	copy(promptSources, sources)
+	for i := range promptSources {
+		promptSources[i].Text = trimRunes(promptSources[i].Text, 320)
+	}
+	evidence["sources"] = promptSources
 	evidence["data_warnings"] = warnings
 	raw, _ := json.Marshal(evidence)
 	sys := persona + ` This application is for educational investment research and paper trading, not live order execution. Follow these rules:

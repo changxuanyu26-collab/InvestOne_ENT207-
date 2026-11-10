@@ -19,7 +19,7 @@ InvestOne runs a private Go server on **127.0.0.1:18791** and opens its web inte
 1. Visit https://changxuanyu26-collab.github.io/InvestOne_ENT207-/downloads/ and click the button for your system and architecture. Each button downloads only its own ZIP.
 2. Extract the *whole* ZIP to a normal folder.
 3. Double-click the platform's **Open InvestOne** launcher (Linux may require making it executable once). Keep the application files together.
-4. The localhost web app opens. Enter **红豆薏米水** (or **RedBeanCoix**) plus **your own Highway API Key**.
+4. The localhost web app opens. Enter **红豆薏米水** (or **RedBeanCoix**) plus **your own ENT207 DeepSeek API key**.
 5. Open the live data diagnostics to check actual financial providers and timestamps.
 
 The Windows and Linux launchers open the URL `http://127.0.0.1:18791`. If the browser fails to launch automatically, enter that address manually.
@@ -37,7 +37,7 @@ The binaries are presently **not code signed or notarized**. Operating systems m
 ## Important capability boundaries
 - The public GitHub Pages interactive preview is a synthetic demonstration.
 - The downloadable application calls real upstream financial and news sources at runtime; requests can be throttled, blocked or unavailable. A successful GitHub Actions smoke test does not guarantee connectivity on every device or network.
-- Real AI requires your Highway API Key.
+- Real AI requires your ENT207 DeepSeek API key.
 - SEC regulatory data requires a legitimate contact email entered in Settings.
 - Continuous monitoring runs while the local service is running and the computer is awake.
 - Investor-framework conversations are educational analyses, not endorsements or real-person voice/face clones.

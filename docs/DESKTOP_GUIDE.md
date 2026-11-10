@@ -9,7 +9,7 @@ The GitHub Pages site is a separate educational preview with sample data. This Z
 1. Download the latest **InvestOne-V2-Mac-AppleSilicon.zip** from the GitHub Release.
 2. Unzip the whole archive, retaining the `InvestOne.app` folder and the launcher.
 3. On your Mac, double-click `Open InvestOne.command`. A browser tab opens at `http://127.0.0.1:18791`.
-4. Sign in as `红豆薏米水` or `RedBeanCoix`, and enter your Highway API Key to use the AI Assistant. The Key is held only in process memory and is not committed, persisted or shared with GitHub.
+4. Sign in as `红豆薏米水` or `RedBeanCoix`, and enter your ENT207 DeepSeek API key to use the AI Assistant. The Key is held only in process memory and is not committed, persisted or shared with GitHub.
 5. In Settings, press **Check live data connections**. Verify the live data provider, reference timestamps and connection status. If a feed fails, its actual error appears; the program does not invent substitute quotes.
 6. For U.S. SEC filings and XBRL facts, enter your real contact email in Settings. This is required for a compliant SEC User-Agent, independently of the AI API key.
 7. Use `Stop InvestOne.command` to stop the local background service. In-memory AI credentials are cleared, and local research data remains on your Mac.
@@ -18,7 +18,7 @@ If macOS flags the unsigned app as untrusted, only approve it if you obtained th
 
 ## What is implemented
 
-- **AI Investment Chatbot:** OpenAI-compatible Highway Chat Completions, documented fact/news/portfolio context, citations to acquired source IDs and persisted history.
+- **AI Investment Chatbot:** OpenAI-compatible ENT207 DeepSeek Chat Completions, documented fact/news/portfolio context, citations to acquired source IDs and persisted history.
 - **Personalised Intelligence:** locally stored profile, watchlist, investment horizon and research preferences; paper portfolio context.
 - **Continuous Monitoring:** configured price/earnings/news/periodic rules, checks and notifications while the desktop service stays awake.
 - **Community Integration:** Reddit RSS where publicly accessible, saved opinions, source/author labels; availability is provider-dependent.

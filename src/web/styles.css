@@ -151,3 +151,35 @@ button:focus-visible,a:focus-visible,textarea:focus-visible,input:focus-visible,
  .bubble .body{font-size:14.5px!important}
  .hint,.data-note{font-size:13px!important}
 }
+
+/* Final control polish: retain the white and mint identity with clearer hierarchy. */
+html,body{font-size:16px;line-height:1.6}
+.nav-item{border-radius:10px!important;transition:background .18s ease,border-color .18s ease}
+.nav-item.active,.nav-item:hover{background:#effbf6!important}
+.nav-icon{width:25px!important;height:25px!important;flex-basis:25px!important}
+.navigation-svg{width:23px;height:23px;stroke-width:1.9}
+.page-heading p,.core-hero p,.hint,.muted,.data-note,.note-body,.source .hint,.source .snippet,.rule-desc,.footer,.checkline span,.login-footer,.card p{font-size:14px!important;line-height:1.7!important}
+.card .label,.quote-card .name,.quote-card .change{font-size:14px!important}
+.source-kind,.bubble .who,.eyebrow{font-size:12px!important}
+label,.persona-chat-form label,.login-form label{font-size:14px!important;font-weight:700!important}
+button,.small,.primary,.ghost,.prompt-chip,.core-link,.linkbtn{
+  min-height:44px;border-radius:10px!important;font-size:14px!important;
+  transition:background .18s ease,border-color .18s ease,box-shadow .18s ease,transform .18s ease!important
+}
+.primary,.login-form .primary,.persona-card .primary{
+  background:#21D59A!important;border-color:#17ba85!important;color:#101010!important;
+  box-shadow:0 3px 0 #10996d24!important
+}
+.primary:hover:not(:disabled),.login-form .primary:hover:not(:disabled),.persona-card .primary:hover:not(:disabled){
+  background:#73e8bf!important;border-color:#10996d!important;
+  box-shadow:0 5px 12px #10996d20!important
+}
+button:not(.primary):hover:not(:disabled),.core-link:hover,.prompt-chip:hover{background:#effbf6!important}
+.prompt-chip{font-size:14px!important;line-height:1.5!important}
+input,select,textarea{font-size:16px!important;min-height:46px;border-radius:9px!important}
+input::placeholder,textarea::placeholder{color:#555!important;opacity:1!important}
+.bubble.user{background:#effbf6!important;border-color:#bdebd8!important}
+.persona-card.is-selected{background:#effbf6!important}
+.listen-voice{font-size:13px!important}
+@media(max-width:760px){.nav-item{font-size:14px!important}.bubble .body{font-size:15px!important}.topbar-actions .pill{font-size:12px!important}}
+@media(prefers-reduced-motion:reduce){*,*:before,*:after{scroll-behavior:auto!important;animation-duration:.01ms!important;transition-duration:.01ms!important}}

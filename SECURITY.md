@@ -4,7 +4,7 @@
 Never upload real API keys, environment files, account identifiers, portfolio exports, private research documents, `~/Library/Application Support/InvestOne` state, or user-specific screenshots.
 
 ## Model API
-The local desktop application holds the configured Highway API key in process memory and does not write it into the local JSON store. Requests send the question and selected source/profile context to the configured provider. The external provider may log or process requests under its own policies. Avoid adding confidential material to prompts.
+The local desktop application holds the configured ENT207 DeepSeek API key in process memory and does not write it into the local JSON store. Requests send the question and selected source/profile context to the configured provider. The external provider may log or process requests under its own policies. Avoid adding confidential material to prompts.
 
 ## Local access model
 The desktop app is **localhost-only, single-user coursework software**, not a hardened cloud authentication solution. Its username is a convenience alias, not a password. Do not expose its Go HTTP port publicly.

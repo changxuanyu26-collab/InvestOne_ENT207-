@@ -11,13 +11,13 @@ Browser UI (local)
      -> SEC filings and financial fact retrieval where supported
      -> News RSS and public community feed retrieval where available
      -> Quant Lab: monthly multi-factor strategy, execution lag and fees
-     -> AI: Highway OpenAI-compatible Chat Completions
+     -> AI: ENT207 DeepSeek OpenAI-compatible Chat Completions
      -> Background monitoring while the application is running
 ```
 
 ### AI
-- Default OpenAI-compatible base URL: `https://api.highwayapi.ai/openai`
-- Default model: `deepseek/deepseek-v4.1-flash`
+- Default OpenAI-compatible base URL: `https://apim-ent207tc.azure-api.net/deepseek/openai/v1`
+- Default model: `DeepSeek-V4-Flash`
 - Key is supplied by the local user and kept in server process memory only.
 - Citations are restricted to retrieved evidence and are not guaranteed to establish every claim.
 - Third-party terms, quota and data availability apply.

@@ -72,8 +72,11 @@ def run():
             page.locator('#main-nav [data-go="humans"]').click()
             page.locator('[data-framework="Graham"]').click()
             assert "Graham-inspired review" in page.locator("#page-content").inner_text()
-            page.locator('[data-prompt*="Graham"]').click()
-            assert "Graham" in page.locator("#messages").inner_text()
+            page.locator('#human-form input[name="question"]').fill("What is the margin of safety for NVDA?")
+            page.locator('#human-form button[type="submit"]').click()
+            assert "Graham-inspired" in page.locator('.human-thread').inner_text()
+            assert "SIMULATED AI RESPONSE" in page.locator('.human-thread').inner_text()
+            assert "Investor Digital Humans" in page.locator('#crumb').inner_text()
 
             video=page.locator("#product-video")
             assert video.count()==1
@@ -88,7 +91,7 @@ def run():
                 assert response.status==200 and b"ftyp" in head, "Original MP4 not present"
             assert not errors, f"Browser exceptions: {errors!r}"
             browser.close()
-        print("PASS: five navigation items, profile -> AI, rules, community -> AI, framework -> AI, original MP4")
+        print("PASS: five navigation items, profile -> AI, rules, community -> AI, in-page digital humans, original MP4")
     finally:
         server.shutdown()
 

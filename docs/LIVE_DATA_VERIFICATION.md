@@ -19,7 +19,7 @@ These are historical **test-observed** reference prices, not current quotes. The
 ### What is not yet verified
 
 - **SEC EDGAR filings and XBRL:** The app supports these endpoints; the test did not call them because `SEC_CONTACT_EMAIL` was not provided. SEC requests require a legitimate contact email, set in the local app or configured as a GitHub Actions repository secret for testing.
-- **Paid Highway AI:** Requires a valid user-owned API key. This was not supplied to the GitHub runner; only the local code and mock-based tests were exercised.
+- **Paid ENT207 DeepSeek AI:** Requires a valid user-owned API key. This was not supplied to the GitHub runner; only the local code and mock-based tests were exercised.
 - **Mac hardware:** A `darwin/arm64` executable is built in CI, but only running it on a physical Mac verifies network/proxy behavior there.
 - **Alternative sources:** Yahoo was available for the tested instruments, so Stooq/Tencent/Google fallback adapters were not exercised by this specific run. Their parsers have separate local tests. Provider availability can change.
 
