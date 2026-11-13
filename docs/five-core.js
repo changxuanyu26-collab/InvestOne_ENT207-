@@ -32,7 +32,7 @@ function ai(){
  + '<div id="messages">'+messages.map(m=>'<div class="ai-bubble '+(m.user?'user':'')+'"><small>'+(m.user?'YOUR QUESTION':'SCRIPTED RESPONSE')+'</small><p>'+esc(m.message)+'</p></div>').join('')+'</div>'
  + '<form id="ask-form" class="fields" style="margin-top:16px"><label class="field" style="flex:1"><span>YOUR INVESTMENT QUESTION</span><input name="question" value="Should I add more NVIDIA to my portfolio?" maxlength="300" required></label><button type="submit" class="button button-primary">Ask →</button></form>'
  + '<div class="quick-prompts"><button data-prompt="How would Buffett assess NVIDIA given my portfolio?">Buffett perspective</button><button data-prompt="Compare NVIDIA community views and valuation risks">Compare opinions</button><button data-prompt="Which alerts should I create for NVDA?">Create monitoring plan</button></div>'
- + '<p class="watchlist-note">This public site uses scripted, context-sensitive examples, not a model API or real financial advice.</p></div>'
+ + '<p class="watchlist-note">Interactive examples are scripted for this preview.</p></div>'
  + '<div class="panel"><div class="section-top"><h2>Connected research workflow</h2><span class="pill">ONE WORKSPACE</span></div>'
  + '<div class="feature-step"><span>01</span><div><b>Personal context</b><p>Risk tolerance, horizon and portfolio holdings guide analysis.</p>'+actionButton('Configure →','personal')+'</div></div>'
  + '<div class="feature-step"><span>02</span><div><b>Evidence and sentiment</b><p>Review example bullish and bearish viewpoints separately from filings.</p>'+actionButton('Explore →','community')+'</div></div>'
