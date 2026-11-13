@@ -11,37 +11,36 @@ import (
 	"time"
 )
 
-const testAccountPassword = "account-password-fixture-2026"
-
-func accountRequest(t *testing.T, c *cloudServer, path, user, password string, cookies ...*http.Cookie) *http.Cookie {
+func nameLogin(t *testing.T, c *cloudServer, name string, cookies ...*http.Cookie) []*http.Cookie {
 	t.Helper()
-	b, _ := json.Marshal(map[string]string{"username": user, "password": password})
-	w := cloudRequest(c.handler(), "POST", path, string(b), cookies...)
+	b, _ := json.Marshal(map[string]string{"username": name})
+	w := cloudRequest(c.handler(), "POST", "/api/login", string(b), cookies...)
 	if w.Code != 200 {
-		t.Fatalf("Account operation %s failed: %d %s", path, w.Code, w.Body.String())
+		t.Fatalf("Name entry failed: %d %s", w.Code, w.Body.String())
 	}
-	return pickCookie(t, w, accountCookie)
+	return w.Result().Cookies()
 }
-func accountState(t *testing.T, c *cloudServer, cookie *http.Cookie) (State, []*http.Cookie) {
+func namedState(t *testing.T, c *cloudServer, cookies ...*http.Cookie) (State, string) {
 	t.Helper()
-	w := cloudRequest(c.handler(), "GET", "/api/state", "", cookie)
+	w := cloudRequest(c.handler(), "GET", "/api/state", "", cookies...)
 	if w.Code != 200 {
-		t.Fatalf("State returned %d", w.Code)
+		t.Fatalf("State failed: %d", w.Code)
 	}
-	var data struct {
+	var d struct {
 		State         State  `json:"state"`
 		Username      string `json:"username"`
+		SignedIn      bool   `json:"signed_in"`
 		Authenticated bool   `json:"authenticated"`
 	}
-	if err := json.Unmarshal(w.Body.Bytes(), &data); err != nil {
+	if err := json.Unmarshal(w.Body.Bytes(), &d); err != nil {
 		t.Fatal(err)
 	}
-	if !data.Authenticated || data.Username == "Guest" {
-		t.Fatal("Account identity missing")
+	if !d.SignedIn || d.Authenticated {
+		t.Fatal("Name entry must be identified without claiming password authentication")
 	}
-	return data.State, w.Result().Cookies()
+	return d.State, d.Username
 }
-func TestAccountsLoginIsolationLogoutAndRestart(t *testing.T) {
+func TestNameEntryIsolationReturnAndRestart(t *testing.T) {
 	t.Setenv("INVESTONE_CLOUD", "1")
 	t.Setenv("INVESTONE_SHARED_AI_KEY", "fixture-course-key")
 	root := t.TempDir()
@@ -51,130 +50,125 @@ func TestAccountsLoginIsolationLogoutAndRestart(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	access := cloudRequest(c.handler(), "GET", "/api/auth/session", "")
-	if !strings.Contains(access.Body.String(), `"authenticated":false`) || !strings.Contains(access.Body.String(), `"guest":false`) {
-		t.Fatal("Fresh visitor should get an explicit entry choice")
+	a := nameLogin(t, c, "  张同学 Sam  ")
+	state, name := namedState(t, c, a...)
+	if name != "张同学 Sam" {
+		t.Fatal("Name was not trimmed or Chinese names were rejected")
 	}
-	guest := cloudRequest(c.handler(), "GET", "/api/state", "")
-	guestID := pickCookie(t, guest, cloudCookie)
-	guestAuth := pickCookie(t, guest, "investone_session")
-	profile := `{"risk":"Low","horizon":"10 years","knowledge":"Beginner","interests":"GUEST_COPY_FIXTURE","email":"","model":"DeepSeek-V4-Flash","max_tokens":240}`
-	if w := cloudRequest(c.handler(), "POST", "/api/profile", profile, guestID, guestAuth); w.Code != 200 {
-		t.Fatal(w.Body.String())
+	var browser *http.Cookie
+	for _, cookie := range a {
+		if cookie.Name == cloudCookie {
+			browser = cookie
+		}
+		if cookie.Name == namedAccessCookie && (!cookie.Secure || !cookie.HttpOnly) {
+			t.Fatal("Workspace cookie is not protected")
+		}
 	}
-	a := accountRequest(t, c, "/api/register", "ResearcherA", testAccountPassword, guestID)
-	if !a.HttpOnly || !a.Secure || a.MaxAge != 7*86400 {
-		t.Fatal("Account cookie protection missing")
+	s, err := c.load(browser.Value)
+	if err != nil {
+		t.Fatal(err)
 	}
-	state, cookies := accountState(t, c, a)
-	if state.Profile.Interests != "GUEST_COPY_FIXTURE" {
-		t.Fatal("Guest workspace not copied")
+	if err = s.app.store.update(func(v *State) error { v.Profile.Interests = "BROWSER_A_FIXTURE"; return nil }); err != nil {
+		t.Fatal(err)
 	}
-	b := accountRequest(t, c, "/api/register", "ResearcherB", testAccountPassword)
-	stateB, _ := accountState(t, c, b)
-	if stateB.Profile.Interests == state.Profile.Interests {
-		t.Fatal("Account data leaked")
+	// Matching names are display labels, never global keys to another person's data.
+	b := nameLogin(t, c, "张同学 Sam")
+	other, _ := namedState(t, c, b...)
+	if other.Profile.Interests == "BROWSER_A_FIXTURE" {
+		t.Fatal("Same-name visitors shared private data")
 	}
-	u, _ := c.accounts.resolve(a.Value)
-	forgedGuest := cloudRequest(c.handler(), "GET", "/api/state", "", &http.Cookie{Name: cloudCookie, Value: u.Workspace})
-	if strings.Contains(forgedGuest.Body.String(), "GUEST_COPY_FIXTURE") {
-		t.Fatal("Guest cookie reached account storage")
+	logout := cloudRequest(c.handler(), "POST", "/api/logout", "{}", a...)
+	if logout.Code != 200 || pickCookie(t, logout, namedAccessCookie).MaxAge != -1 {
+		t.Fatal("Sign-out failed")
 	}
-	otherDevice := accountRequest(t, c, "/api/login", "researchera", testAccountPassword)
-	resumed, _ := accountState(t, c, otherDevice)
-	if resumed.Profile.Interests != state.Profile.Interests {
-		t.Fatal("Cross-device sign-in lost workspace")
+	returned := nameLogin(t, c, "张同学 Sam", browser)
+	saved, _ := namedState(t, c, returned...)
+	if saved.Profile.Interests != "BROWSER_A_FIXTURE" {
+		t.Fatal("Returning browser lost work")
 	}
-	wrong := cloudRequest(c.handler(), "POST", "/api/login", `{"username":"ResearcherA","password":"incorrect-password-value"}`)
-	if wrong.Code != 401 {
-		t.Fatal("Incorrect password accepted")
-	}
-	bad := cloudRequest(c.handler(), "POST", "/api/login", `{"username":"ResearcherA"}`)
-	if bad.Code != 400 {
-		t.Fatal("Password-free legacy cloud login accepted")
-	}
-	logoutCookies := append([]*http.Cookie{a}, cookies...)
-	logout := cloudRequest(c.handler(), "POST", "/api/logout", "{}", logoutCookies...)
-	if logout.Code != 200 {
-		t.Fatal("Logout failed")
-	}
-	if w := cloudRequest(c.handler(), "GET", "/api/state", "", a); w.Code != 401 {
-		t.Fatal("Logged-out credential still works")
-	}
-	accountState(t, c, otherDevice) // Other devices remain signed in.
 	ctx2, cancel2 := context.WithCancel(context.Background())
 	defer cancel2()
 	restarted, err := newCloudServer(ctx2, root)
 	if err != nil {
 		t.Fatal(err)
 	}
-	afterRestart, _ := accountState(t, restarted, otherDevice)
-	if afterRestart.Profile.Interests != state.Profile.Interests {
-		t.Fatal("Workspace/session did not survive restart")
+	persisted, _ := namedState(t, restarted, returned...)
+	if persisted.Profile.Interests != saved.Profile.Interests {
+		t.Fatal("Restart lost saved work")
 	}
-	stored, err := os.ReadFile(filepath.Join(root, "accounts.json"))
-	if err != nil {
-		t.Fatal(err)
+	_ = state
+	if _, err := os.Stat(filepath.Join(root, "accounts.json")); !os.IsNotExist(err) {
+		t.Fatal("Name entry should not create password accounts")
 	}
-	if strings.Contains(string(stored), testAccountPassword) || strings.Contains(string(stored), otherDevice.Value) || strings.Contains(string(stored), "fixture-course-key") {
-		t.Fatal("Plaintext secret persisted")
-	}
-	info, _ := os.Stat(filepath.Join(root, "accounts.json"))
-	if info.Mode().Perm() != 0600 {
-		t.Fatal("Account file must be private")
-	}
-	for _, p := range []string{"/api/state", "/api/export"} {
-		w := cloudRequest(restarted.handler(), "GET", p, "", otherDevice)
-		if p == "/api/export" {
-			s := cloudRequest(restarted.handler(), "GET", "/api/state", "", otherDevice)
-			w = cloudRequest(restarted.handler(), "GET", p, "", otherDevice, pickCookie(t, s, "investone_session"))
-		}
-		if strings.Contains(w.Body.String(), "password_hash") || strings.Contains(w.Body.String(), "fixture-course-key") {
-			t.Fatal("Credentials exposed through application API")
-		}
+	info, err := os.Stat(filepath.Join(root, "browser-names.json"))
+	if err != nil || info.Mode().Perm() != 0600 {
+		t.Fatal("Name records should be private")
 	}
 }
-
-func TestAccountValidationExpiryAndGuestReturn(t *testing.T) {
-	t.Setenv("INVESTONE_CLOUD", "1")
+func TestNameEntryValidationAndExistingGuestData(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	c, err := newCloudServer(ctx, t.TempDir())
 	if err != nil {
 		t.Fatal(err)
 	}
-	h := c.handler()
-	for _, body := range []string{`{"username":"../escape","password":"account-password-fixture"}`, `{"username":"ValidUser","password":"short"}`, `{"username":"ValidUser","password":"` + strings.Repeat("a", 73) + `"}`} {
-		if w := cloudRequest(h, "POST", "/api/register", body); w.Code != 400 {
-			t.Fatal("Invalid credentials accepted")
+	for _, name := range []string{"", "   ", strings.Repeat("张", 61), "Sam\nChang"} {
+		b, _ := json.Marshal(map[string]string{"username": name})
+		if w := cloudRequest(c.handler(), "POST", "/api/login", string(b)); w.Code != 400 {
+			t.Fatal("Invalid display name accepted")
 		}
 	}
-	cookie := accountRequest(t, c, "/api/register", "ValidUser", testAccountPassword)
-	if w := cloudRequest(h, "POST", "/api/register", `{"username":"validuser","password":"account-password-fixture"}`); w.Code != 409 {
-		t.Fatal("Duplicate case-insensitive username accepted")
+	guest := cloudRequest(c.handler(), "GET", "/api/state", "")
+	browser := pickCookie(t, guest, cloudCookie)
+	s, _ := c.load(browser.Value)
+	s.app.store.update(func(v *State) error { v.Profile.Interests = "EXISTING_GUEST_FIXTURE"; return nil })
+	cookies := nameLogin(t, c, "A", browser)
+	saved, name := namedState(t, c, cookies...)
+	if name != "A" || saved.Profile.Interests != "EXISTING_GUEST_FIXTURE" {
+		t.Fatal("Short name or existing guest data was not preserved")
 	}
-	c.accounts.mu.Lock()
-	key := sessionDigest(cookie.Value)
-	s := c.accounts.data.Sessions[key]
-	s.Expires = time.Now().Add(-time.Second)
-	c.accounts.data.Sessions[key] = s
-	c.accounts.mu.Unlock()
-	if w := cloudRequest(h, "GET", "/api/state", "", cookie); w.Code != 401 {
-		t.Fatal("Expired session accepted or silently became a guest")
+	if w := cloudRequest(c.handler(), "POST", "/api/register", `{}`); w.Code != 410 {
+		t.Fatal("Old registration should be retired")
 	}
-	guest := cloudRequest(h, "POST", "/api/guest", "{}")
-	g := pickCookie(t, guest, guestAccessCookie)
-	if w := cloudRequest(h, "GET", "/api/auth/session", "", g); !strings.Contains(w.Body.String(), `"guest":true`) {
-		t.Fatal("Explicit guest entry not remembered")
+}
+func TestNameEntryPreservesExistingSignedInWorkspace(t *testing.T) {
+	root := t.TempDir()
+	token := id()
+	workspace := id()
+	legacy := map[string]any{"users": map[string]any{"olduser": map[string]string{"username": "OldUser", "workspace": workspace, "password_hash": "unused-legacy-hash"}}, "sessions": map[string]accountSession{sessionDigest(token): {User: "olduser", Expires: time.Now().Add(time.Hour)}}}
+	raw, _ := json.Marshal(legacy)
+	if err := os.WriteFile(filepath.Join(root, "accounts.json"), raw, 0600); err != nil {
+		t.Fatal(err)
 	}
-	logout := cloudRequest(h, "POST", "/api/logout", "{}", g)
-	if pickCookie(t, logout, guestAccessCookie).MaxAge != -1 {
-		t.Fatal("Sign-out should return to entry choice after reload")
+	store, err := openStore(filepath.Join(root, "account-workspaces", workspace+".json"))
+	if err != nil {
+		t.Fatal(err)
 	}
-	for i := 0; i < 31; i++ {
-		cloudRequest(h, "POST", "/api/login", `{}`)
+	if err = store.update(func(v *State) error { v.Profile.Interests = "LEGACY_WORKSPACE_FIXTURE"; return nil }); err != nil {
+		t.Fatal(err)
 	}
-	if w := cloudRequest(h, "POST", "/api/login", `{}`); w.Code != 429 {
-		t.Fatal("Login throttling absent")
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	c, err := newCloudServer(ctx, root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	migration := cloudRequest(c.handler(), "GET", "/api/auth/session", "", &http.Cookie{Name: accountCookie, Value: token})
+	if migration.Code != 200 || !strings.Contains(migration.Body.String(), `"signed_in":true`) {
+		t.Fatal("Existing signed-in browser was not restored")
+	}
+	cookies := migration.Result().Cookies()
+	saved, name := namedState(t, c, cookies...)
+	if name != "OldUser" || saved.Profile.Interests != "LEGACY_WORKSPACE_FIXTURE" {
+		t.Fatal("Legacy data not retained")
+	}
+	stranger := nameLogin(t, c, "OldUser")
+	different, _ := namedState(t, c, stranger...)
+	if different.Profile.Interests == saved.Profile.Interests {
+		t.Fatal("Typing a legacy name unlocked someone else's data")
+	}
+	after, _ := os.ReadFile(filepath.Join(root, "accounts.json"))
+	if string(after) != string(raw) {
+		t.Fatal("Legacy data should remain untouched")
 	}
 }

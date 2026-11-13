@@ -277,7 +277,7 @@ func (c *cloudServer) handler() http.Handler {
 				if user != nil {
 					username = user.Username
 				}
-				send(w, 200, map[string]any{"state": state, "cloud": true, "authenticated": user != nil, "username": username, "ai_ready": s.app.getKey() != "", "public_ai": s.app.sharedKey != "", "version": Version, "api_base": APIBase, "mode": "CLOUD_LIVE_BACKEND"})
+				send(w, 200, map[string]any{"state": state, "cloud": true, "signed_in": user != nil, "authenticated": false, "username": username, "ai_ready": s.app.getKey() != "", "public_ai": s.app.sharedKey != "", "version": Version, "api_base": APIBase, "mode": "CLOUD_LIVE_BACKEND"})
 				return
 			}
 			s.app.api(w, r)

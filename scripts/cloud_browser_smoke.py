@@ -15,7 +15,8 @@ with sync_playwright() as playwright:
  assert cta.get_attribute("href")=="/app/"
  cta.click()
  page.wait_for_url("**/app/",timeout=15000)
- page.get_by_role("button",name="Continue as guest →").click()
+ page.get_by_label("Your name",exact=True).fill("Demo Visitor")
+ page.get_by_role("button",name="Enter InvestOne →",exact=True).click()
  page.locator("nav .nav-item").first.wait_for(timeout=40000)
  actual=page.locator("nav .nav-item").all_text_contents()
  expected=["AI Investment Chatbot","Personalised Intelligence","Continuous Automation","Community Integration","Investor Digital Humans"]
@@ -101,7 +102,8 @@ with sync_playwright() as playwright:
  assert external_cta.count()==1,"GitHub Pages landing CTA missing"
  external_cta.click()
  external.wait_for_url("**/app/",timeout=25000)
- external.get_by_role("button",name="Continue as guest →").click()
+ external.get_by_label("Your name",exact=True).fill("Demo Visitor")
+ external.get_by_role("button",name="Enter InvestOne →",exact=True).click()
  external.locator("nav .nav-item").first.wait_for(timeout=20000)
  assert "Cross-site request blocked" not in external.locator("body").inner_text()
  print("CROSS-SITE GITHUB → RAILWAY NAVIGATION PASS",flush=True)
@@ -114,7 +116,8 @@ with sync_playwright() as playwright:
  assert p.get_by_role("link",name="Try InvestOne live web app").is_visible()
  assert p.locator("h1").count()==1
  p.get_by_role("link",name="Try InvestOne live web app").click()
- p.get_by_role("button",name="Continue as guest →").click()
+ p.get_by_label("Your name",exact=True).fill("Demo Visitor")
+ p.get_by_role("button",name="Enter InvestOne →",exact=True).click()
  p.locator("nav .nav-item").first.wait_for(timeout=40000)
  print("MOBILE PASS: one-button, no-account live app entry",flush=True)
  mobile.close()

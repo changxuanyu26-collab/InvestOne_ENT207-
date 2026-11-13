@@ -38,7 +38,7 @@ jobs:
           else:
               raise SystemExit('Matching Railway release did not become ready')
           PY
-      - name: Validate account creation, sign-in, isolated workspaces and mobile access
+      - name: Validate name-only entry, isolated browser workspaces and mobile access
         env:
           INVESTONE_LIVE_URL: https://investone-live-production.up.railway.app
         run: python3 scripts/auth_browser_smoke.py
