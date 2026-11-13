@@ -22,13 +22,13 @@ var cloudTokenPattern = regexp.MustCompile(`^[a-f0-9]{48}$`)
 // cloudSession holds one independently persisted browser's InvestOne application.
 // No model API keys are written to disk. Cookies are random, HttpOnly and Secure.
 type cloudSession struct {
-	app     *App
-	cancel  context.CancelFunc
-	mu      sync.Mutex
-	started time.Time
-	hits    int
+	app       *App
+	cancel    context.CancelFunc
+	mu        sync.Mutex
+	started   time.Time
+	hits      int
 	aiStarted time.Time
-	aiHits int
+	aiHits    int
 }
 
 type cloudServer struct {
@@ -40,6 +40,7 @@ type cloudServer struct {
 	static   http.Handler
 	visits   *visitTracker
 	aiGate   chan struct{}
+	accounts *accountStore
 }
 
 func newCloudServer(ctx context.Context, root string) (*cloudServer, error) {
@@ -53,7 +54,11 @@ func newCloudServer(ctx context.Context, root string) (*cloudServer, error) {
 	if e != nil {
 		return nil, e
 	}
-	c := &cloudServer{sessions: map[string]*cloudSession{}, provider: newLiveProvider(), dataDir: root, ctx: ctx, static: http.FileServer(http.FS(sub)), visits: newVisitTracker(root), aiGate: make(chan struct{}, 2)}
+	accounts, e := openAccounts(root)
+	if e != nil {
+		return nil, errors.New("Account storage unavailable")
+	}
+	c := &cloudServer{sessions: map[string]*cloudSession{}, provider: newLiveProvider(), dataDir: root, ctx: ctx, static: http.FileServer(http.FS(sub)), visits: newVisitTracker(root), aiGate: make(chan struct{}, 2), accounts: accounts}
 	if key := strings.TrimSpace(os.Getenv("INVESTONE_SHARED_AI_KEY")); key != "" && !keyValid(key) {
 		return nil, errors.New("invalid server-side AI key configuration")
 	}
@@ -83,21 +88,33 @@ func newCloudServer(ctx context.Context, root string) (*cloudServer, error) {
 			fmt.Fprintf(os.Stderr, "Skipped damaged workspace: %v\n", err)
 		}
 	}
+	for _, user := range accounts.data.Users {
+		if _, err := c.loadAccount(user.Workspace); err != nil {
+			return nil, errors.New("Account workspace unavailable")
+		}
+	}
 	return c, nil
 }
 func (c *cloudServer) load(token string) (*cloudSession, error) {
+	return c.loadWorkspace(token, filepath.Join(c.dataDir, token+".json"))
+}
+func (c *cloudServer) loadAccount(token string) (*cloudSession, error) {
+	return c.loadWorkspace("account-"+token, filepath.Join(c.dataDir, "account-workspaces", token+".json"))
+}
+func (c *cloudServer) loadWorkspace(token, path string) (*cloudSession, error) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	if existing, ok := c.sessions[token]; ok {
 		return existing, nil
 	}
-	path := filepath.Join(c.dataDir, token+".json")
 	store, e := openStore(path)
 	if e != nil {
 		return nil, e
 	}
 	if os.Getenv("INVESTONE_SHARED_AI_KEY") != "" {
-		if e := clearStoreChat(store); e != nil { return nil, e }
+		if e := clearStoreChat(store); e != nil {
+			return nil, e
+		}
 	}
 	app := newApp(store, c.provider)
 	ctx, cancel := context.WithCancel(c.ctx)
@@ -108,11 +125,15 @@ func (c *cloudServer) load(token string) (*cloudSession, error) {
 }
 func clearSavedChat(path string) error {
 	store, err := openStore(path)
-	if err != nil { return err }
+	if err != nil {
+		return err
+	}
 	return clearStoreChat(store)
 }
 func clearStoreChat(store *Store) error {
-	if len(store.snapshot().Messages) == 0 { return nil }
+	if len(store.snapshot().Messages) == 0 {
+		return nil
+	}
 	return store.update(func(s *State) error { s.Messages = []Message{}; return nil })
 }
 func (c *cloudServer) browserSession(w http.ResponseWriter, r *http.Request) (*cloudSession, error) {
@@ -196,7 +217,7 @@ func (c *cloudServer) handler() http.Handler {
 					return
 				}
 			}
-			if len(r.Header.Get("X-InvestOne")) == 0 {
+			if r.Header.Get("X-InvestOne") != "1" {
 				http.Error(w, "Missing application request header", 403)
 				return
 			}
@@ -204,8 +225,15 @@ func (c *cloudServer) handler() http.Handler {
 				send(w, 200, c.visits.snapshot())
 				return
 			}
-			s, e := c.browserSession(w, r)
+			if c.auth(w, r) {
+				return
+			}
+			s, user, e := c.workspace(w, r)
 			if e != nil {
+				if errors.Is(e, errExpiredAccount) {
+					fail(w, 401, e)
+					return
+				}
 				fail(w, 500, errors.New("Workspace storage unavailable"))
 				return
 			}
@@ -239,6 +267,18 @@ func (c *cloudServer) handler() http.Handler {
 				s.app.mu.Unlock()
 				http.SetCookie(w, &http.Cookie{Name: "investone_session", Value: token, Path: "/", HttpOnly: true, Secure: true, SameSite: http.SameSiteStrictMode, MaxAge: 7 * 86400})
 				r.AddCookie(&http.Cookie{Name: "investone_session", Value: token})
+			}
+			if r.URL.Path == "/api/state" && r.Method == http.MethodGet {
+				state := s.app.store.snapshot()
+				if s.app.sharedKey != "" {
+					state.Messages = []Message{}
+				}
+				username := "Guest"
+				if user != nil {
+					username = user.Username
+				}
+				send(w, 200, map[string]any{"state": state, "cloud": true, "authenticated": user != nil, "username": username, "ai_ready": s.app.getKey() != "", "public_ai": s.app.sharedKey != "", "version": Version, "api_base": APIBase, "mode": "CLOUD_LIVE_BACKEND"})
+				return
 			}
 			s.app.api(w, r)
 			return

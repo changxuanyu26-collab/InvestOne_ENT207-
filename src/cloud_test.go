@@ -60,8 +60,8 @@ func TestCloudLandingAndSessionIsolation(t *testing.T) {
 	if !pickCookie(t, guest, "investone_session").Secure {
 		t.Fatal("Guest auth cookie must be secure")
 	}
-	loginPayload := `{"username":"RedBeanCoix","key":"key-visitor-a"}`
-	visitorA := cloudRequest(h, "POST", "/api/login", loginPayload)
+	loginPayload := `{"username":"RedBeanCoix","password":"test-password-fixture-a"}`
+	visitorA := cloudRequest(h, "GET", "/api/state", "")
 	if visitorA.Code != 200 {
 		t.Fatalf("A login: %d %s", visitorA.Code, visitorA.Body.String())
 	}
@@ -70,7 +70,7 @@ func TestCloudLandingAndSessionIsolation(t *testing.T) {
 	if !cookieA.Secure || !authA.Secure || !cookieA.HttpOnly || !authA.HttpOnly {
 		t.Fatal("Cloud cookies must be secure and HTTP-only")
 	}
-	visitorB := cloudRequest(h, "POST", "/api/login", `{"username":"RedBeanCoix","key":"key-visitor-b"}`)
+	visitorB := cloudRequest(h, "GET", "/api/state", "")
 	if visitorB.Code != 200 {
 		t.Fatalf("B login: %d %s", visitorB.Code, visitorB.Body.String())
 	}
@@ -98,8 +98,9 @@ func TestCloudLandingAndSessionIsolation(t *testing.T) {
 	if a.State.Profile.Risk != "Conservative" || b.State.Profile.Risk == "Conservative" {
 		t.Fatal("Browser state leakage or failed save")
 	}
-	if cloud.sessions[cookieA.Value].app.getKey() == cloud.sessions[cookieB.Value].app.getKey() {
-		t.Fatal("Browser key leak")
+	setKey := cloudRequest(h, "POST", "/api/key", `{"key":"key-visitor-a"}`, cookieA, authA)
+	if setKey.Code != 200 || cloud.sessions[cookieB.Value].app.getKey() != "" {
+		t.Fatal("Browser key leak or key update failure")
 	}
 	malicious := httptest.NewRequest("POST", "https://investone.example/api/login", strings.NewReader(loginPayload))
 	malicious.Header.Set("X-InvestOne", "1")
@@ -115,32 +116,34 @@ func TestCloudCrossSiteTopLevelNavigation(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	cloud, err := newCloudServer(ctx, t.TempDir())
-	if err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
 	handler := cloud.handler()
-	request := func(method,path,mode,dest string) int {
-		r:=httptest.NewRequest(method,"https://investone.example"+path,nil)
-		r.Header.Set("Sec-Fetch-Site","cross-site")
-		r.Header.Set("Sec-Fetch-Mode",mode)
-		r.Header.Set("Sec-Fetch-Dest",dest)
-		r.Header.Set("X-InvestOne","1")
-		w:=httptest.NewRecorder()
-		handler.ServeHTTP(w,r)
+	request := func(method, path, mode, dest string) int {
+		r := httptest.NewRequest(method, "https://investone.example"+path, nil)
+		r.Header.Set("Sec-Fetch-Site", "cross-site")
+		r.Header.Set("Sec-Fetch-Mode", mode)
+		r.Header.Set("Sec-Fetch-Dest", dest)
+		r.Header.Set("X-InvestOne", "1")
+		w := httptest.NewRecorder()
+		handler.ServeHTTP(w, r)
 		return w.Code
 	}
-	for _,path:= range []string{"/","/app/","/app","/landing"} {
-		if got:=request("GET",path,"navigate","document"); got!=200 {
-			t.Errorf("Cross-site top-level navigation %s should succeed; got %d",path,got)
+	for _, path := range []string{"/", "/app/", "/app", "/landing"} {
+		if got := request("GET", path, "navigate", "document"); got != 200 {
+			t.Errorf("Cross-site top-level navigation %s should succeed; got %d", path, got)
 		}
 	}
-	for _,tc:=range []struct{method,path,mode,dest string}{
-		{"GET","/api/state","cors","empty"},
-		{"POST","/api/login","navigate","document"},
-		{"GET","/app.js","no-cors","script"},
-		{"GET","/api/state","navigate","document"},
-		{"GET","/app/","no-cors","iframe"},
+	for _, tc := range []struct{ method, path, mode, dest string }{
+		{"GET", "/api/state", "cors", "empty"},
+		{"POST", "/api/login", "navigate", "document"},
+		{"GET", "/app.js", "no-cors", "script"},
+		{"GET", "/api/state", "navigate", "document"},
+		{"GET", "/app/", "no-cors", "iframe"},
 	} {
-		if got:=request(tc.method,tc.path,tc.mode,tc.dest);got!=http.StatusForbidden{
-			t.Errorf("Unsafe cross-site request %s %s (%s/%s) returned %d",tc.method,tc.path,tc.mode,tc.dest,got)
+		if got := request(tc.method, tc.path, tc.mode, tc.dest); got != http.StatusForbidden {
+			t.Errorf("Unsafe cross-site request %s %s (%s/%s) returned %d", tc.method, tc.path, tc.mode, tc.dest, got)
 		}
 	}
 }
@@ -151,29 +154,43 @@ func TestCloudSharedAIAndVisitCounts(t *testing.T) {
 	root := t.TempDir()
 	oldPath := filepath.Join(root, strings.Repeat("a", 48)+".json")
 	oldStore, err := openStore(oldPath)
-	if err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
 	if err := oldStore.update(func(s *State) error {
-		s.Messages = []Message{{Role:"user",Content:"OLD_CHAT_MUST_BE_ERASED",Persona:"assistant"}}
+		s.Messages = []Message{{Role: "user", Content: "OLD_CHAT_MUST_BE_ERASED", Persona: "assistant"}}
 		return nil
-	}); err != nil { t.Fatal(err) }
+	}); err != nil {
+		t.Fatal(err)
+	}
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	cloud, err := newCloudServer(ctx, root)
-	if err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
 	if saved, err := os.ReadFile(oldPath); err != nil || strings.Contains(string(saved), "OLD_CHAT_MUST_BE_ERASED") {
 		t.Fatal("old public chat history remained on disk", err)
 	}
 	h := cloud.handler()
 	page := cloudRequest(h, "GET", "/app/", "")
-	if page.Code != 200 { t.Fatalf("app page: %d", page.Code) }
+	if page.Code != 200 {
+		t.Fatalf("app page: %d", page.Code)
+	}
 	guest := cloudRequest(h, "GET", "/api/state", "")
 	var state struct {
-		AIReady bool `json:"ai_ready"`
+		AIReady  bool `json:"ai_ready"`
 		PublicAI bool `json:"public_ai"`
 	}
-	if err := json.Unmarshal(guest.Body.Bytes(), &state); err != nil { t.Fatal(err) }
-	if !state.AIReady || !state.PublicAI { t.Fatal("public AI not enabled for guest") }
-	var stateBody struct { State State `json:"state"` }
+	if err := json.Unmarshal(guest.Body.Bytes(), &state); err != nil {
+		t.Fatal(err)
+	}
+	if !state.AIReady || !state.PublicAI {
+		t.Fatal("public AI not enabled for guest")
+	}
+	var stateBody struct {
+		State State `json:"state"`
+	}
 	if err := json.Unmarshal(guest.Body.Bytes(), &stateBody); err != nil || len(stateBody.State.Messages) != 0 {
 		t.Fatal("public state exposed chat history", err)
 	}
@@ -182,7 +199,9 @@ func TestCloudSharedAIAndVisitCounts(t *testing.T) {
 	}
 	visits := cloudRequest(h, "GET", "/api/visits", "")
 	var counts visitCounts
-	if err := json.Unmarshal(visits.Body.Bytes(), &counts); err != nil { t.Fatal(err) }
+	if err := json.Unmarshal(visits.Body.Bytes(), &counts); err != nil {
+		t.Fatal(err)
+	}
 	if counts.PageViews != 1 || counts.BrowserSessions != 1 {
 		t.Fatalf("incorrect aggregate visit counts: %+v", counts)
 	}
@@ -192,5 +211,7 @@ func TestCloudSharedAIAndVisitCounts(t *testing.T) {
 	cookie := pickCookie(t, guest, cloudCookie)
 	auth := pickCookie(t, guest, "investone_session")
 	reject := cloudRequest(h, "POST", "/api/key", `{"key":"override"}`, cookie, auth)
-	if reject.Code != 403 { t.Fatalf("public key override should be blocked: %d", reject.Code) }
+	if reject.Code != 403 {
+		t.Fatalf("public key override should be blocked: %d", reject.Code)
+	}
 }

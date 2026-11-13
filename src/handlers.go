@@ -6,9 +6,9 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"os"
 	"net/http"
 	"net/url"
+	"os"
 	"sort"
 	"strings"
 	"sync"
@@ -36,6 +36,10 @@ func (a *App) api(w http.ResponseWriter, r *http.Request) {
 	}
 	if r.Header.Get("X-InvestOne") != "1" {
 		fail(w, 403, errors.New("Missing local-client verification header"))
+		return
+	}
+	if path == "/api/auth/session" && r.Method == "GET" {
+		send(w, 200, map[string]any{"cloud": false, "authenticated": a.authorized(r)})
 		return
 	}
 	if path == "/api/login" && r.Method == "POST" {
@@ -71,7 +75,7 @@ func (a *App) api(w http.ResponseWriter, r *http.Request) {
 			a.key = v.Key
 		}
 		a.mu.Unlock()
-		http.SetCookie(w, &http.Cookie{Name: "investone_session", Value: token, Path: "/", HttpOnly: true, SameSite: http.SameSiteStrictMode, Secure: os.Getenv("INVESTONE_CLOUD")=="1", MaxAge: 7 * 86400})
+		http.SetCookie(w, &http.Cookie{Name: "investone_session", Value: token, Path: "/", HttpOnly: true, SameSite: http.SameSiteStrictMode, Secure: os.Getenv("INVESTONE_CLOUD") == "1", MaxAge: 7 * 86400})
 		send(w, 200, map[string]any{"ok": true, "ai_ready": a.getKey() != ""})
 		return
 	}
@@ -136,7 +140,9 @@ func (a *App) api(w http.ResponseWriter, r *http.Request) {
 	}
 	if path == "/api/state" && r.Method == "GET" {
 		state := a.store.snapshot()
-		if a.sharedKey != "" { state.Messages = []Message{} }
+		if a.sharedKey != "" {
+			state.Messages = []Message{}
+		}
 		send(w, 200, map[string]any{"state": state, "ai_ready": a.getKey() != "", "public_ai": a.sharedKey != "", "version": Version, "username": Username, "api_base": APIBase, "mode": "LIVE_DATA_ONLY"})
 		return
 	}
@@ -145,14 +151,16 @@ func (a *App) api(w http.ResponseWriter, r *http.Request) {
 		a.sessions = map[string]time.Time{}
 		a.key = ""
 		a.mu.Unlock()
-		http.SetCookie(w, &http.Cookie{Name: "investone_session", Value: "", Path: "/", MaxAge: -1, HttpOnly: true, Secure: os.Getenv("INVESTONE_CLOUD")=="1", SameSite: http.SameSiteStrictMode})
+		http.SetCookie(w, &http.Cookie{Name: "investone_session", Value: "", Path: "/", MaxAge: -1, HttpOnly: true, Secure: os.Getenv("INVESTONE_CLOUD") == "1", SameSite: http.SameSiteStrictMode})
 		send(w, 200, map[string]bool{"ok": true})
 		return
 	}
 	if path == "/api/export" && r.Method == "GET" {
 		w.Header().Set("Content-Disposition", "attachment; filename=InvestOne-data.json")
 		state := a.store.snapshot()
-		if a.sharedKey != "" { state.Messages = []Message{} }
+		if a.sharedKey != "" {
+			state.Messages = []Message{}
+		}
 		send(w, 200, state)
 		return
 	}
@@ -370,7 +378,7 @@ func (a *App) api(w http.ResponseWriter, r *http.Request) {
 		e = a.store.update(func(s *State) error { return applyTrade(s, v.Side, sym, v.Quantity, ch.Price, ch.Source, ch.AsOf) })
 		respondUpdate(w, e)
 	case "/api/chat/stream":
-		a.streamChat(w,r)
+		a.streamChat(w, r)
 	case "/api/chat":
 		var v ChatRequest
 		if e := decode(w, r, &v); e != nil {

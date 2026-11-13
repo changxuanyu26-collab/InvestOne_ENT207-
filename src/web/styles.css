@@ -183,3 +183,25 @@ input::placeholder,textarea::placeholder{color:#555!important;opacity:1!importan
 .listen-voice{font-size:13px!important}
 @media(max-width:760px){.nav-item{font-size:14px!important}.bubble .body{font-size:15px!important}.topbar-actions .pill{font-size:12px!important}}
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{scroll-behavior:auto!important;animation-duration:.01ms!important;transition-duration:.01ms!important}}
+
+/* Account access shares the app's white and mint palette. */
+.login-story{background:radial-gradient(ellipse at 0% 65%,#effbf6 0%,#fff 70%)!important}
+.login-form-wrap{background:#fff!important;padding:48px 9%}
+.login-story h1{font-size:clamp(36px,4.2vw,60px)}
+.auth-tabs{display:flex;gap:6px;padding:5px;background:#f6f8f7;border:1px solid var(--line);border-radius:13px;margin-bottom:32px}
+.auth-tabs button{flex:1;background:transparent!important;border-color:transparent;box-shadow:none}
+.auth-tabs button[aria-pressed=true]{background:#fff!important;border-color:#bdebd8;box-shadow:0 2px 6px #10101008}
+.auth-benefits{display:grid;gap:16px;margin:34px 0 48px}
+.auth-benefits div{display:flex;align-items:center;gap:14px;font-size:14px}
+.auth-benefits b{color:#08714e;border:1px solid #bdebd8;background:#effbf6;padding:5px 9px;border-radius:9px;font-size:12px}
+.auth-help{margin:-9px 0 18px!important;font-size:12px!important}
+.auth-error{padding:12px 14px;margin:0 0 14px;background:#fff3ef;border:1px solid #e9b6a8;border-radius:9px;font-size:13px}
+.auth-error[hidden]{display:none}
+.auth-divider{display:flex;align-items:center;gap:12px;margin:24px 0 18px;color:#555;font-size:12px}
+.auth-divider:before,.auth-divider:after{content:"";height:1px;flex:1;background:var(--line)}
+.guest-entry{width:100%;background:#fff!important}
+.auth-back{display:inline-block;font-size:13px;margin-top:8px;color:#101010}
+.userbox strong{overflow-wrap:anywhere}
+.account-entry{white-space:nowrap}
+@media(max-width:900px){.login{grid-template-columns:1fr}.login-story{padding:28px 24px}.login-story .intro{margin-top:30px}.login-story h1{font-size:38px}.login-story h1 br{display:none}.login-story .intro p{margin-bottom:0}.auth-benefits,.login-story .status-line{display:none}.login-form-wrap{border-left:0;border-top:1px solid var(--line);padding:32px 24px}.auth-tabs{margin-bottom:24px}}
+@media(max-width:480px){.topbar-actions{flex-wrap:wrap}.account-entry{display:inline-flex!important;align-items:center}.login-story h1{font-size:32px}}

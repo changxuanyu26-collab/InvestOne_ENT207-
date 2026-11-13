@@ -39,11 +39,11 @@ The six files are published by [GitHub Pages automated build](.github/workflows/
 
 **[Open the InvestOne Landing Page, then click TRY OUR APP](https://changxuanyu26-collab.github.io/InvestOne_ENT207-/)**
 
-The landing page leads to the real Go backend hosted on Railway, not to the old simulated preview. Visitors can access provider-backed financial data without registration. Their research preferences, holdings, alerts and documents are isolated in persistent browser workspaces. For actual AI analysis, visitors enter their own ENT207 DeepSeek API key in the app settings; keys remain in server memory.
+The landing page leads to the real Go backend hosted on Railway, not to the old simulated preview. Visitors can access provider-backed financial data without registration. Choose **Sign in**, **Create account**, or **Continue as guest** on the app entry screen. Accounts use a username and password and restore the same saved workspace across devices; guests keep their existing browser workspace. Registration copies the current guest workspace into an independent account workspace. The server-managed shared course AI connection is available without entering an API key.
 
-The five connected features are real AI Investment Chatbot (user-supplied key), Personalised Intelligence (saved user context), Continuous Automation (server-side rules), Community Integration (real public RSS where available), and Investor Digital Humans (educational Buffett/Munger/Graham AI frameworks, stylized avatars and browser speech synthesis). The last feature is not a clone of any actual investor.
+The five connected features are real AI Investment Chatbot (server-managed shared course key), Personalised Intelligence (saved user context), Continuous Automation (server-side rules), Community Integration (real public RSS where available), and Investor Digital Humans (educational Buffett/Munger/Graham AI frameworks, stylized avatars and browser speech synthesis). The last feature is not a clone of any actual investor.
 
-**Independent cloud test:** [Successful GitHub Actions run](https://github.com/changxuanyu26-collab/InvestOne_ENT207-/actions/runs/42684363153) validated HTTPS, visitor isolation, actual SPY quote/source/timestamps from Yahoo, 19 genuine NVDA news items, and safe rejection when no paid AI key was provided. A successful paid model response still needs testing with a legitimate user Key. Providers can rate-limit or become unavailable.
+**Cloud verification:** `scripts/cloud_live_smoke.py` checks visitor isolation, provider-backed quotes, news and monitoring. `scripts/cloud_browser_smoke.py` checks the live desktop/mobile UI. `scripts/auth_browser_smoke.py` checks registration, sign-in, guest data copying, cross-device workspace restoration and sign-out without making paid AI requests.
 
 The [original video](https://changxuanyu26-collab.github.io/InvestOne_ENT207-/demo.mp4) remains available, and the [old synthetic interactive preview](https://changxuanyu26-collab.github.io/InvestOne_ENT207-/app/) remains for archival demonstration only.
 
@@ -132,3 +132,7 @@ Automated workflows:
 - See [SECURITY.md](SECURITY.md), [ARCHITECTURE.md](ARCHITECTURE.md), [LIMITATIONS.md](LIMITATIONS.md) for full boundaries.
 
 **InvestOne is an educational research prototype and does not provide regulated investment advice.**
+
+### Web account access
+
+Usernames are case-insensitive, with 3–32 letters, numbers, underscores or hyphens. Passwords use 12–72 bytes and are stored only as bcrypt hashes. Sign-in lasts seven days; signing out revokes only the current device. Accounts and session digests persist on the Railway volume, separately from guest workspaces. Guest data is retained when creating an account or signing out. Self-service password recovery is not available yet, so save your password securely. Chat remains page-only and clears on refresh.
