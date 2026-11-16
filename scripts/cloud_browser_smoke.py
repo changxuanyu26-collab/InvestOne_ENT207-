@@ -76,7 +76,7 @@ with sync_playwright() as playwright:
  page.locator('.core-link[href="#quant"]').click()
  page.locator('#quant-form').wait_for(timeout=10000)
  assert "Sector Allocation" in page.locator("#page-content").inner_text()
- page.locator('#quant-form button[type="submit"]').click()
+ page.get_by_role("button",name="Fetch historical prices and run backtest ↗",exact=True).click()
  page.locator("#quant-result .metric").first.wait_for(timeout=90000)
  assert "Strategy cumulative return" in page.locator("#quant-result").inner_text()
  print("SECTOR ALLOCATION AND BACKTEST BUTTON PASS",flush=True)
