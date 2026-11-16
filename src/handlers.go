@@ -83,6 +83,34 @@ func (a *App) api(w http.ResponseWriter, r *http.Request) {
 		fail(w, 401, errors.New("Please sign in to InvestOne"))
 		return
 	}
+	if path == "/api/quant/config" && r.Method == "POST" {
+		var v QuantConfig
+		if e := decode(w, r, &v); e != nil {
+			fail(w, 400, e)
+			return
+		}
+		n := len(sectors)
+		if v.Universe == "technology" {
+			n = len(technology)
+		} else if v.Universe != "sectors" {
+			fail(w, 400, errors.New("Invalid universe"))
+			return
+		}
+		if v.Range != "2y" && v.Range != "5y" {
+			fail(w, 400, errors.New("Invalid range"))
+			return
+		}
+		if e := validateQuant(v, n); e != nil {
+			fail(w, 400, e)
+			return
+		}
+		if e := a.store.update(func(s *State) error { s.QuantConfig = &v; return nil }); e != nil {
+			fail(w, 500, errors.New("Unable to save configuration"))
+			return
+		}
+		send(w, 200, map[string]bool{"ok": true})
+		return
+	}
 	if path == "/api/diagnostics" && r.Method == "GET" {
 		type check struct {
 			Status     string `json:"status"`

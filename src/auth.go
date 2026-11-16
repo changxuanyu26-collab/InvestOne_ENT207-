@@ -139,6 +139,9 @@ func browserToken(r *http.Request) string {
 	return ""
 }
 func (c *cloudServer) identity(r *http.Request) (account, bool) {
+	if n, ok := c.memberIdentity(r); ok {
+		return n, true
+	}
 	active, err := r.Cookie(namedAccessCookie)
 	if err != nil || active.Value != "1" {
 		return account{}, false
@@ -156,6 +159,11 @@ func setAccessCookie(w http.ResponseWriter, name, value string, age int) {
 	http.SetCookie(w, &http.Cookie{Name: name, Value: value, Path: "/", HttpOnly: true, Secure: true, SameSite: http.SameSiteLaxMode, MaxAge: age})
 }
 func (c *cloudServer) workspace(w http.ResponseWriter, r *http.Request) (*cloudSession, *account, error) {
+	if cookie, e := r.Cookie(memberCookie); e == nil && cookie.Value != "" {
+		if _, valid := c.memberIdentity(r); !valid {
+			return nil, nil, errExpiredAccount
+		}
+	}
 	if n, ok := c.identity(r); ok {
 		if n.Workspace != "" {
 			s, err := c.loadAccount(n.Workspace)
@@ -175,6 +183,9 @@ func (c *cloudServer) workspace(w http.ResponseWriter, r *http.Request) (*cloudS
 	return s, nil, err
 }
 func (c *cloudServer) auth(w http.ResponseWriter, r *http.Request) bool {
+	if c.memberAuth(w, r) {
+		return true
+	}
 	path := r.URL.Path
 	if path != "/api/auth/session" && path != "/api/login" && path != "/api/logout" && path != "/api/register" && path != "/api/guest" {
 		return false
@@ -205,7 +216,7 @@ func (c *cloudServer) auth(w http.ResponseWriter, r *http.Request) bool {
 				setAccessCookie(w, accountCookie, "", -1)
 			}
 		}
-		send(w, 200, map[string]any{"cloud": true, "signed_in": ok, "authenticated": false, "username": n.Username, "guest": false})
+		send(w, 200, map[string]any{"cloud": true, "signed_in": ok, "authenticated": func() bool { _, valid := c.memberIdentity(r); return valid }(), "username": n.Username, "guest": false})
 		return true
 	}
 	if r.Method != "POST" {
@@ -258,6 +269,7 @@ func (c *cloudServer) auth(w http.ResponseWriter, r *http.Request) bool {
 		fail(w, 500, errors.New("Unable to save your name. Please try again."))
 		return true
 	}
+	setAccessCookie(w, memberCookie, "", -1)
 	setAccessCookie(w, cloudCookie, token, 30*86400)
 	setAccessCookie(w, namedAccessCookie, "1", 30*86400)
 	setAccessCookie(w, accountCookie, "", -1)

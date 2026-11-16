@@ -95,17 +95,18 @@ type Notice struct {
 	RuleID string `json:"rule_id"`
 }
 type State struct {
-	Schema    int        `json:"schema"`
-	Profile   Profile    `json:"profile"`
-	Watchlist []string   `json:"watchlist"`
-	Cash      float64    `json:"cash"`
-	Holdings  []Holding  `json:"holdings"`
-	Trades    []Trade    `json:"trades"`
-	Messages  []Message  `json:"messages"`
-	Documents []Document `json:"documents"`
-	Rules     []Rule     `json:"rules"`
-	Notices   []Notice   `json:"notices"`
-	Community []Source   `json:"community"`
+	QuantConfig *QuantConfig `json:"quant_config,omitempty"`
+	Schema      int          `json:"schema"`
+	Profile     Profile      `json:"profile"`
+	Watchlist   []string     `json:"watchlist"`
+	Cash        float64      `json:"cash"`
+	Holdings    []Holding    `json:"holdings"`
+	Trades      []Trade      `json:"trades"`
+	Messages    []Message    `json:"messages"`
+	Documents   []Document   `json:"documents"`
+	Rules       []Rule       `json:"rules"`
+	Notices     []Notice     `json:"notices"`
+	Community   []Source     `json:"community"`
 }
 
 type Store struct {

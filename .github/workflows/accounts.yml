@@ -1,0 +1,40 @@
+name: Account persistence tests
+on:
+  pull_request:
+    paths: ['src/**', '.github/workflows/accounts.yml']
+  push:
+    branches: [main, feat/user-accounts]
+    paths: ['src/**', '.github/workflows/accounts.yml']
+permissions:
+  contents: read
+jobs:
+  accounts:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.23'
+          cache-dependency-path: src/go.sum
+      - run: go test -race ./...
+        working-directory: src
+      - run: go vet ./...
+        working-directory: src
+      - run: node --check src/web/app.js
+      - name: Install browser test dependencies
+        run: |
+          python -m pip install playwright==1.56.0
+          python -m playwright install --with-deps chromium
+      - name: Check account and visitor browser flows
+        env:
+          INVESTONE_CLOUD: '1'
+          INVESTONE_DATA_DIR: /tmp/investone-account-qa
+          INVESTONE_QA_OUTPUT: /tmp/investone-account-screenshots
+          PORT: '18893'
+        run: |
+          (cd src && go run .) > /tmp/investone-account-qa.log 2>&1 &
+          for i in $(seq 1 30); do
+            if curl -fsS http://localhost:18893/api/health; then break; fi
+            sleep 1
+          done
+          python scripts/auth_browser_smoke.py

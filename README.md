@@ -1,3 +1,13 @@
+## Registered accounts (cloud deployment)
+
+The live application is hosted on Railway at https://investone-live-production.up.railway.app/app. GitHub Pages is the public landing/download site.
+
+Cloud users can now create a username/password account or continue in the existing browser-only workspace. Registered accounts persist watchlists, profile preferences, paper portfolios and research settings across devices. In Quant Lab, **Save selection settings** saves the universe, date range, position count, factor weights, fees and trend filter without running a backtest. Backtest submissions also save these settings.
+
+Accounts start with a fresh workspace; existing browser-only workspaces remain separate. Registration does not claim data belonging to someone with the same display name. Passwords use bcrypt; session tokens are stored as hashes, expire after 30 days and are revoked on logout. Password recovery and email verification are not included in this release. Shared course chat remains ephemeral by design.
+
+**Deployment requirement:** attach a Railway persistent Volume mounted at `/data`, set `INVESTONE_DATA_DIR=/data/users`, and run a single replica. `members.json` contains password hashes and session records; `account-workspaces/` holds account state. Back up the entire data directory together. Without a Volume, redeployment can erase accounts and settings. Do not commit or publish this directory. Existing account and browser data files must be preserved during rollout. Multi-replica deployments require a shared transactional database before scaling.
+
 <div align="center">
 
 # InvestOne
@@ -39,7 +49,7 @@ The six files are published by [GitHub Pages automated build](.github/workflows/
 
 **[Open the InvestOne Landing Page, then click TRY OUR APP](https://changxuanyu26-collab.github.io/InvestOne_ENT207-/)**
 
-The landing page leads to the real Go backend hosted on Railway, not to the old simulated preview. Visitors can access provider-backed financial data without registration. Enter a name on the app entry screen to begin. No registration or password is required; English and Chinese names are supported. Names are display labels, and work remains isolated by browser, so identical names do not share data. Signing out returns to the name-entry screen; entering a name again in the same browser restores the saved workspace. Existing visitor data is preserved. The shared course AI connection requires no API key entry.
+The landing page leads to the real Go backend hosted on Railway, not to the old simulated preview. Visitors can access provider-backed financial data without registration. Register or sign in to sync your settings across devices, or enter a display name under “Continue without an account” for browser-only access. English and Chinese names are supported. Names are display labels, and work remains isolated by browser, so identical names do not share data. Signing out returns to the sign-in screen; entering a name again in the same browser restores the saved workspace. Existing visitor data is preserved. The shared course AI connection requires no API key entry.
 
 The five connected features are real AI Investment Chatbot (server-managed shared course key), Personalised Intelligence (saved user context), Continuous Automation (server-side rules), Community Integration (real public RSS where available), and Investor Digital Humans (educational Buffett/Munger/Graham AI frameworks, stylized avatars and browser speech synthesis). The last feature is not a clone of any actual investor.
 
