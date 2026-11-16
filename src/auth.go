@@ -24,10 +24,13 @@ var errExpiredAccount = errors.New("Please enter your name to continue.")
 type account struct {
 	Username  string `json:"username"`
 	Workspace string `json:"workspace"`
+	Temporary bool   `json:"-"`
+	SessionID string `json:"-"`
 }
 type accountSession struct {
-	User    string    `json:"user"`
-	Expires time.Time `json:"expires"`
+	User      string    `json:"user"`
+	Expires   time.Time `json:"expires"`
+	Temporary bool      `json:"temporary,omitempty"`
 }
 type accountData struct {
 	Users    map[string]account        `json:"users"`
@@ -166,6 +169,10 @@ func (c *cloudServer) workspace(w http.ResponseWriter, r *http.Request) (*cloudS
 	}
 	if n, ok := c.identity(r); ok {
 		if n.Workspace != "" {
+			if n.Temporary {
+				s, err := c.temporaryMember(n, r)
+				return s, &n, err
+			}
 			s, err := c.loadAccount(n.Workspace)
 			return s, &n, err
 		}
@@ -216,7 +223,7 @@ func (c *cloudServer) auth(w http.ResponseWriter, r *http.Request) bool {
 				setAccessCookie(w, accountCookie, "", -1)
 			}
 		}
-		send(w, 200, map[string]any{"cloud": true, "signed_in": ok, "authenticated": func() bool { _, valid := c.memberIdentity(r); return valid }(), "username": n.Username, "guest": false})
+		send(w, 200, map[string]any{"cloud": true, "signed_in": ok, "authenticated": func() bool { _, valid := c.memberIdentity(r); return valid }(), "username": n.Username, "save_records": ok && !n.Temporary, "guest": false})
 		return true
 	}
 	if r.Method != "POST" {

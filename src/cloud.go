@@ -29,19 +29,22 @@ type cloudSession struct {
 	hits      int
 	aiStarted time.Time
 	aiHits    int
+	lastUsed  time.Time // Guest lifetime; protected by cloudServer.mu.
 }
 
 type cloudServer struct {
-	mu       sync.Mutex
-	sessions map[string]*cloudSession
-	provider Provider
-	dataDir  string
-	ctx      context.Context
-	static   http.Handler
-	visits   *visitTracker
-	aiGate   chan struct{}
-	accounts *accountStore
-	members  *memberStore
+	mu             sync.Mutex
+	sessions       map[string]*cloudSession
+	provider       Provider
+	dataDir        string
+	ctx            context.Context
+	static         http.Handler
+	visits         *visitTracker
+	aiGate         chan struct{}
+	accounts       *accountStore
+	members        *memberStore
+	workspaceLocks sync.Map
+	aiLimits       sync.Map // Retain public AI limits across temporary page resets.
 }
 
 func newCloudServer(ctx context.Context, root string) (*cloudServer, error) {
@@ -146,6 +149,52 @@ func clearStoreChat(store *Store) error {
 	}
 	return store.update(func(s *State) error { s.Messages = []Message{}; return nil })
 }
+
+// Guest workspaces exist only for the current page lifetime. The page token
+// also isolates tabs while account workspaces continue to use durable storage.
+func (c *cloudServer) loadGuest(token string) (*cloudSession, error) {
+	return c.loadTransient(token, nil)
+}
+func (c *cloudServer) loadTransient(token string, seed *State) (*cloudSession, error) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	key := "guest-" + token
+	now := time.Now()
+	oldestKey := ""
+	guestCount := 0
+	for k, session := range c.sessions {
+		if !strings.HasPrefix(k, "guest-") {
+			continue
+		}
+		if now.Sub(session.lastUsed) > 24*time.Hour {
+			session.cancel()
+			delete(c.sessions, k)
+			continue
+		}
+		guestCount++
+		if oldestKey == "" || session.lastUsed.Before(c.sessions[oldestKey].lastUsed) {
+			oldestKey = k
+		}
+	}
+	if existing, ok := c.sessions[key]; ok {
+		existing.lastUsed = now
+		return existing, nil
+	}
+	if guestCount >= 500 && oldestKey != "" {
+		c.sessions[oldestKey].cancel()
+		delete(c.sessions, oldestKey)
+	}
+	store := &Store{value: initialState()}
+	if seed != nil {
+		store.value = clone(*seed)
+	}
+	app := newApp(store, c.provider)
+	ctx, cancel := context.WithCancel(c.ctx)
+	sess := &cloudSession{app: app, cancel: cancel, started: now, lastUsed: now}
+	c.sessions[key] = sess
+	go app.monitorLoop(ctx)
+	return sess, nil
+}
 func (c *cloudServer) browserSession(w http.ResponseWriter, r *http.Request) (*cloudSession, error) {
 	token := ""
 	if cookie, e := r.Cookie(cloudCookie); e == nil && cloudTokenPattern.MatchString(cookie.Value) {
@@ -156,7 +205,10 @@ func (c *cloudServer) browserSession(w http.ResponseWriter, r *http.Request) (*c
 		http.SetCookie(w, &http.Cookie{Name: cloudCookie, Value: token, Path: "/", MaxAge: 30 * 86400, Secure: true, HttpOnly: true, SameSite: http.SameSiteLaxMode})
 		c.visits.browserSession()
 	}
-	return c.load(token)
+	if pageToken := r.Header.Get("X-InvestOne-Page"); cloudTokenPattern.MatchString(pageToken) {
+		token = pageToken
+	}
+	return c.loadGuest(token)
 }
 func (s *cloudSession) withinLimit() bool {
 	s.mu.Lock()
@@ -235,6 +287,13 @@ func (c *cloudServer) handler() http.Handler {
 				send(w, 200, c.visits.snapshot())
 				return
 			}
+			// Serialize a member's workspace requests so changing the saving option
+			// cannot race with an in-flight write from another tab or device.
+			if n, ok := c.memberIdentity(r); ok && r.Method == http.MethodPost {
+				gate, _ := c.workspaceLocks.LoadOrStore(n.Workspace, &sync.Mutex{})
+				gate.(*sync.Mutex).Lock()
+				defer gate.(*sync.Mutex).Unlock()
+			}
 			if c.auth(w, r) {
 				return
 			}
@@ -246,6 +305,23 @@ func (c *cloudServer) handler() http.Handler {
 				}
 				fail(w, 500, errors.New("Workspace storage unavailable"))
 				return
+			}
+			// A page-scoped workspace must not depend on a shared browser
+			// session cookie, which another tab could replace. The random
+			// page token only authorizes the already selected transient app;
+			// registered workspaces still require the member cookie above.
+			if pageToken := r.Header.Get("X-InvestOne-Page"); s.app.store.path == "" && cloudTokenPattern.MatchString(pageToken) {
+				s.app.mu.Lock()
+				s.app.sessions[pageToken] = time.Now().Add(7 * 24 * time.Hour)
+				s.app.mu.Unlock()
+				cookies := r.Cookies()
+				r.Header.Del("Cookie")
+				for _, cookie := range cookies {
+					if cookie.Name != "investone_session" {
+						r.AddCookie(cookie)
+					}
+				}
+				r.AddCookie(&http.Cookie{Name: "investone_session", Value: pageToken})
 			}
 			if !s.withinLimit() {
 				fail(w, 429, errors.New("Too many requests; try again shortly"))
@@ -259,7 +335,16 @@ func (c *cloudServer) handler() http.Handler {
 					fail(w, 429, errors.New("The public AI service is busy; try again shortly"))
 					return
 				}
-				if !s.allowAI() {
+				budget := s
+				budgetKey := browserToken(r)
+				if user != nil && user.Workspace != "" {
+					budgetKey = "account-" + user.Workspace
+				}
+				if budgetKey != "" {
+					limiter, _ := c.aiLimits.LoadOrStore(budgetKey, &cloudSession{})
+					budget = limiter.(*cloudSession)
+				}
+				if !budget.allowAI() {
 					fail(w, 429, errors.New("This browser has reached its AI request limit; try again in 10 minutes"))
 					return
 				}
@@ -287,7 +372,7 @@ func (c *cloudServer) handler() http.Handler {
 				if user != nil {
 					username = user.Username
 				}
-				send(w, 200, map[string]any{"state": state, "cloud": true, "signed_in": user != nil, "authenticated": func() bool { _, ok := c.memberIdentity(r); return ok }(), "username": username, "ai_ready": s.app.getKey() != "", "public_ai": s.app.sharedKey != "", "version": Version, "api_base": APIBase, "mode": "CLOUD_LIVE_BACKEND"})
+				send(w, 200, map[string]any{"state": state, "cloud": true, "signed_in": user != nil, "authenticated": func() bool { _, ok := c.memberIdentity(r); return ok }(), "username": username, "save_records": user != nil && !user.Temporary && func() bool { _, ok := c.memberIdentity(r); return ok }(), "ai_ready": s.app.getKey() != "", "public_ai": s.app.sharedKey != "", "version": Version, "api_base": APIBase, "mode": "CLOUD_LIVE_BACKEND"})
 				return
 			}
 			s.app.api(w, r)

@@ -99,7 +99,7 @@ func TestCloudLandingAndSessionIsolation(t *testing.T) {
 		t.Fatal("Browser state leakage or failed save")
 	}
 	setKey := cloudRequest(h, "POST", "/api/key", `{"key":"key-visitor-a"}`, cookieA, authA)
-	if setKey.Code != 200 || cloud.sessions[cookieB.Value].app.getKey() != "" {
+	if setKey.Code != 200 || cloud.sessions["guest-"+cookieB.Value].app.getKey() != "" {
 		t.Fatal("Browser key leak or key update failure")
 	}
 	malicious := httptest.NewRequest("POST", "https://investone.example/api/login", strings.NewReader(loginPayload))
@@ -213,5 +213,68 @@ func TestCloudSharedAIAndVisitCounts(t *testing.T) {
 	reject := cloudRequest(h, "POST", "/api/key", `{"key":"override"}`, cookie, auth)
 	if reject.Code != 403 {
 		t.Fatalf("public key override should be blocked: %d", reject.Code)
+	}
+}
+
+func TestGuestPageLifetimeDoesNotPersist(t *testing.T) {
+	root := t.TempDir()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	cloud, err := newCloudServer(ctx, root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	request := func(method, path, body, page string, cookies ...*http.Cookie) *httptest.ResponseRecorder {
+		r := httptest.NewRequest(method, "https://investone.example"+path, strings.NewReader(body))
+		r.Header.Set("X-InvestOne", "1")
+		r.Header.Set("X-InvestOne-Page", page)
+		r.Header.Set("Content-Type", "application/json")
+		for _, cookie := range cookies {
+			r.AddCookie(cookie)
+		}
+		w := httptest.NewRecorder()
+		cloud.handler().ServeHTTP(w, r)
+		return w
+	}
+	pageA, pageB := id(), id()
+	first := request("GET", "/api/state", "", pageA)
+	cookies := first.Result().Cookies()
+	saved := request("POST", "/api/watchlist", `{"symbol":"AMD","remove":false}`, pageA, cookies...)
+	if saved.Code != 200 {
+		t.Fatal(saved.Code, saved.Body.String())
+	}
+	read := func(page string) State {
+		w := request("GET", "/api/state", "", page, cookies...)
+		var data struct {
+			State State `json:"state"`
+		}
+		if err := json.Unmarshal(w.Body.Bytes(), &data); err != nil {
+			t.Fatal(err)
+		}
+		return data.State
+	}
+	hasAMD := func(s State) bool {
+		for _, symbol := range s.Watchlist {
+			if symbol == "AMD" {
+				return true
+			}
+		}
+		return false
+	}
+	if !hasAMD(read(pageA)) {
+		t.Fatal("Guest lost data during the same page visit")
+	}
+	if hasAMD(read(pageB)) {
+		t.Fatal("Refreshed page or second tab reused old guest data")
+	}
+	entries, err := os.ReadDir(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, f := range entries {
+		token := strings.TrimSuffix(f.Name(), ".json")
+		if cloudTokenPattern.MatchString(token) {
+			t.Fatal("Guest workspace was written to disk")
+		}
 	}
 }

@@ -2,9 +2,9 @@
 
 The live application is hosted on Railway at https://investone-live-production.up.railway.app/app. GitHub Pages is the public landing/download site.
 
-Cloud users can now create a username/password account or continue in the existing browser-only workspace. Registered accounts persist watchlists, profile preferences, paper portfolios and research settings across devices. In Quant Lab, **Save selection settings** saves the universe, date range, position count, factor weights, fees and trend filter without running a backtest. Backtest submissions also save these settings.
+Cloud users can now create a username/password account or continue in a temporary guest workspace. Registered accounts can choose **Save changes to my account across devices** at sign-in and in Personal Settings (enabled by default). Saved watchlists, profile preferences, paper portfolios and research settings are restored across devices. Pausing saving applies to the current sign-in: new changes last only for the current page; older saved records remain. Re-enabling saves the current workspace. In Quant Lab, **Save selection settings** saves the universe, date range, position count, factor weights, fees and trend filter without running a backtest. Backtest submissions also save these settings.
 
-Accounts start with a fresh workspace; existing browser-only workspaces remain separate. Registration does not claim data belonging to someone with the same display name. Passwords use bcrypt; session tokens are stored as hashes, expire after 30 days and are revoked on logout. Password recovery and email verification are not included in this release. Shared course chat remains ephemeral by design.
+Accounts start with a fresh workspace. Guest records reset on refresh, reopening, or re-entering visitor mode; guest workspace contents are held in server memory rather than written to disk. Existing saved data files remain preserved separately. Registration does not claim data belonging to someone with the same display name. Passwords use bcrypt; session tokens are stored as hashes, expire after 30 days and are revoked on logout. Password recovery and email verification are not included in this release. Shared course chat remains ephemeral by design.
 
 **Deployment requirement:** attach a Railway persistent Volume mounted at `/data`, set `INVESTONE_DATA_DIR=/data/users`, and run a single replica. `members.json` contains password hashes and session records; `account-workspaces/` holds account state. Back up the entire data directory together. Without a Volume, redeployment can erase accounts and settings. Do not commit or publish this directory. Existing account and browser data files must be preserved during rollout. Multi-replica deployments require a shared transactional database before scaling.
 
@@ -49,11 +49,11 @@ The six files are published by [GitHub Pages automated build](.github/workflows/
 
 **[Open the InvestOne Landing Page, then click TRY OUR APP](https://changxuanyu26-collab.github.io/InvestOne_ENT207-/)**
 
-The landing page leads to the real Go backend hosted on Railway, not to the old simulated preview. Visitors can access provider-backed financial data without registration. Register or sign in to sync your settings across devices, or enter a display name under “Continue without an account” for browser-only access. English and Chinese names are supported. Names are display labels, and work remains isolated by browser, so identical names do not share data. Signing out returns to the sign-in screen; entering a name again in the same browser restores the saved workspace. Existing visitor data is preserved. The shared course AI connection requires no API key entry.
+The landing page leads to the real Go backend hosted on Railway, not to the old simulated preview. Visitors can access provider-backed financial data without registration. Register or sign in to sync your settings across devices, or enter a display name under “Continue without an account” for temporary access. English and Chinese names are supported. Names are display labels, and guest work is isolated by page, so identical names do not share data. Guest changes reset on browser refresh, reopening, and re-entry; changing sections within the current page retains them. Previously stored visitor files are preserved separately. The shared course AI connection requires no API key entry.
 
 The five connected features are real AI Investment Chatbot (server-managed shared course key), Personalised Intelligence (saved user context), Continuous Automation (server-side rules), Community Integration (real public RSS where available), and Investor Digital Humans (educational Buffett/Munger/Graham AI frameworks, stylized avatars and browser speech synthesis). The last feature is not a clone of any actual investor.
 
-**Cloud verification:** `scripts/cloud_live_smoke.py` checks visitor isolation, provider-backed quotes, news and monitoring. `scripts/cloud_browser_smoke.py` checks the live desktop/mobile UI. `scripts/auth_browser_smoke.py` checks name-only entry, browser isolation, saved-workspace restoration and sign-out without making paid AI requests.
+**Cloud verification:** `scripts/cloud_live_smoke.py` checks visitor isolation, provider-backed quotes, news and monitoring. `scripts/cloud_browser_smoke.py` checks the live desktop/mobile UI. `scripts/auth_browser_smoke.py` checks name-only entry, browser isolation, guest reset, optional account saving, cross-device restoration and sign-out without making paid AI requests.
 
 The [original video](https://changxuanyu26-collab.github.io/InvestOne_ENT207-/demo.mp4) remains available, and the [old synthetic interactive preview](https://changxuanyu26-collab.github.io/InvestOne_ENT207-/app/) remains for archival demonstration only.
 
@@ -61,7 +61,7 @@ The [original video](https://changxuanyu26-collab.github.io/InvestOne_ENT207-/de
 
 | Edition | Runs where | Data and AI |
 |---|---|---|
-| **Web App** | Railway HTTPS, reachable from GitHub landing page | Live upstream data, isolated browser workspaces, server-managed shared ENT207 DeepSeek AI, and chat that resets on reload |
+| **Web App** | Railway HTTPS, reachable from GitHub landing page | Live upstream data, optional account persistence, temporary guest workspaces, server-managed shared ENT207 DeepSeek AI, and chat that resets on reload |
 | **Desktop** | Mac, Windows and Linux local Go server | Same external providers and user-owned credentials |
 | **Archived preview** | GitHub Pages /app/ | Synthetic examples only |
 
@@ -77,7 +77,7 @@ In **Investor Digital Humans**, selecting Buffett-, Munger- or Graham-inspired a
 
 **AI Investment Chatbot** provides a single natural-language research entry point, retrieving available market, filings, financial fact, news, portfolio and local-document context before calling the configured model.
 
-**Personalised Investment Intelligence** stores a research profile, holdings and personal preferences locally to provide relevant context, rather than generic market answers.
+**Personalised Investment Intelligence** uses a research profile, holdings and personal preferences from the current workspace to provide relevant context, rather than generic market answers.
 
 **Continuous Monitoring & Automation** evaluates user rules and prepares alerts or refreshed analysis while the Mac service is running and awake.
 
@@ -145,4 +145,4 @@ Automated workflows:
 
 ### Web name entry
 
-Visitors enter a display name of 1–60 characters. English and Chinese names are accepted, including spaces. No password, registration or global name lookup is used. Workspaces are tied to random Secure/HttpOnly browser cookies, not to names; using the same name on another device does not restore or expose the first device's data. Sign-out clears the active session while preserving saved browser data. Existing signed-in browsers are migrated without deleting their prior workspace. Chat remains page-only and clears on refresh.
+Visitors enter a display name of 1–60 characters. English and Chinese names are accepted, including spaces. No password, registration or global name lookup is used. Workspaces are tied to random Secure/HttpOnly browser cookies, not to names; using the same name on another device does not restore or expose the first device's data. Guest workspace contents are temporary and reset when the page is refreshed, reopened, or visitor mode is entered again. Historical files are retained during rollout; they are not automatically migrated into newly registered accounts. Chat remains page-only and clears on refresh.

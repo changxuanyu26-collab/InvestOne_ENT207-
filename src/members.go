@@ -98,15 +98,19 @@ func (c *cloudServer) memberIdentity(r *http.Request) (account, bool) {
 		return account{}, false
 	}
 	u, ok := m.data.Users[s.User]
-	return account{Username: u.Name, Workspace: u.Workspace}, ok
+	return account{Username: u.Name, Workspace: u.Workspace, Temporary: s.Temporary, SessionID: sessionDigest(cookie.Value)}, ok
 }
 func (c *cloudServer) memberAuth(w http.ResponseWriter, r *http.Request) bool {
 	p := r.URL.Path
-	if p != "/api/account/register" && p != "/api/account/login" && p != "/api/logout" && p != "/api/guest" {
+	if p != "/api/account/register" && p != "/api/account/login" && p != "/api/account/preferences" && p != "/api/logout" && p != "/api/guest" {
 		return false
 	}
 	if r.Method != "POST" {
 		fail(w, 405, errors.New("Method not allowed"))
+		return true
+	}
+	if p == "/api/account/preferences" {
+		c.memberPreferences(w, r)
 		return true
 	}
 	m := c.members
@@ -126,8 +130,9 @@ func (c *cloudServer) memberAuth(w http.ResponseWriter, r *http.Request) bool {
 		return false
 	}
 	var v struct {
-		Username string `json:"username"`
-		Password string `json:"password"`
+		Username    string `json:"username"`
+		Password    string `json:"password"`
+		SaveRecords *bool  `json:"save_records"`
 	}
 	r.Body = http.MaxBytesReader(w, r.Body, 4096)
 	if e := decode(w, r, &v); e != nil {
@@ -192,7 +197,7 @@ func (c *cloudServer) memberAuth(w http.ResponseWriter, r *http.Request) bool {
 		}
 	}
 	token := id()
-	d.Sessions[sessionDigest(token)] = accountSession{User: key, Expires: time.Now().Add(30 * 24 * time.Hour)}
+	d.Sessions[sessionDigest(token)] = accountSession{User: key, Expires: time.Now().Add(30 * 24 * time.Hour), Temporary: v.SaveRecords != nil && !*v.SaveRecords}
 	if e := m.save(d); e != nil {
 		fail(w, 500, errors.New("Unable to save account"))
 		return true
@@ -203,4 +208,82 @@ func (c *cloudServer) memberAuth(w http.ResponseWriter, r *http.Request) bool {
 	setAccessCookie(w, accountCookie, "", -1)
 	send(w, 200, map[string]any{"ok": true, "username": u.Name})
 	return true
+}
+
+// Saving can be selected for each sign-in. Temporary changes stay in server
+// memory for this page, seeded from the last saved account workspace.
+func (c *cloudServer) temporaryMember(n account, r *http.Request) (*cloudSession, error) {
+	saved, err := c.loadAccount(n.Workspace)
+	if err != nil {
+		return nil, err
+	}
+	seed := saved.app.store.snapshot()
+	page := r.Header.Get("X-InvestOne-Page")
+	if !cloudTokenPattern.MatchString(page) {
+		page = n.SessionID
+	}
+	return c.loadTransient("member-"+n.Workspace+"-"+n.SessionID+"-"+page, &seed)
+}
+func (c *cloudServer) memberPreferences(w http.ResponseWriter, r *http.Request) {
+	n, ok := c.memberIdentity(r)
+	if !ok {
+		fail(w, 401, errors.New("Sign in to change record saving"))
+		return
+	}
+	var input struct {
+		SaveRecords *bool `json:"save_records"`
+	}
+	r.Body = http.MaxBytesReader(w, r.Body, 1024)
+	if err := decode(w, r, &input); err != nil || input.SaveRecords == nil {
+		fail(w, 400, errors.New("Choose whether to save records"))
+		return
+	}
+	if *input.SaveRecords == !n.Temporary {
+		send(w, 200, map[string]bool{"ok": true})
+		return
+	}
+	current, _, err := c.workspace(w, r)
+	if err != nil {
+		fail(w, 500, errors.New("Workspace unavailable"))
+		return
+	}
+	state := current.app.store.snapshot()
+	state.Messages = []Message{}
+	if *input.SaveRecords {
+		saved, err := c.loadAccount(n.Workspace)
+		if err != nil {
+			fail(w, 500, errors.New("Saved workspace unavailable"))
+			return
+		}
+		if err := saved.app.store.update(func(s *State) error { *s = clone(state); return nil }); err != nil {
+			fail(w, 500, errors.New("Unable to save records"))
+			return
+		}
+	} else {
+		temporary, err := c.temporaryMember(n, r)
+		if err != nil {
+			fail(w, 500, errors.New("Temporary workspace unavailable"))
+			return
+		}
+		if err := temporary.app.store.update(func(s *State) error { *s = clone(state); return nil }); err != nil {
+			fail(w, 500, errors.New("Unable to pause saving"))
+			return
+		}
+	}
+	m := c.members
+	m.Lock()
+	defer m.Unlock()
+	d := m.copy()
+	session, valid := d.Sessions[n.SessionID]
+	if !valid {
+		fail(w, 401, errors.New("Sign in again"))
+		return
+	}
+	session.Temporary = !*input.SaveRecords
+	d.Sessions[n.SessionID] = session
+	if err := m.save(d); err != nil {
+		fail(w, 500, errors.New("Unable to update saving preference"))
+		return
+	}
+	send(w, 200, map[string]bool{"ok": true, "save_records": *input.SaveRecords})
 }

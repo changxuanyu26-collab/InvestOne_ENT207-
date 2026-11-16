@@ -64,7 +64,7 @@ func TestNameEntryIsolationReturnAndRestart(t *testing.T) {
 			t.Fatal("Workspace cookie is not protected")
 		}
 	}
-	s, err := c.load(browser.Value)
+	s, err := c.loadGuest(browser.Value)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -93,8 +93,8 @@ func TestNameEntryIsolationReturnAndRestart(t *testing.T) {
 		t.Fatal(err)
 	}
 	persisted, _ := namedState(t, restarted, returned...)
-	if persisted.Profile.Interests != saved.Profile.Interests {
-		t.Fatal("Restart lost saved work")
+	if persisted.Profile.Interests == saved.Profile.Interests {
+		t.Fatal("Guest data survived a server restart")
 	}
 	_ = state
 	if _, err := os.Stat(filepath.Join(root, "accounts.json")); !os.IsNotExist(err) {
@@ -120,7 +120,7 @@ func TestNameEntryValidationAndExistingGuestData(t *testing.T) {
 	}
 	guest := cloudRequest(c.handler(), "GET", "/api/state", "")
 	browser := pickCookie(t, guest, cloudCookie)
-	s, _ := c.load(browser.Value)
+	s, _ := c.loadGuest(browser.Value)
 	s.app.store.update(func(v *State) error { v.Profile.Interests = "EXISTING_GUEST_FIXTURE"; return nil })
 	cookies := nameLogin(t, c, "A", browser)
 	saved, name := namedState(t, c, cookies...)
