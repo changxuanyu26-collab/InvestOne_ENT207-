@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Headless name-only entry and browser-workspace acceptance; no AI calls."""
+"""Account and browser-workspace acceptance; no AI calls."""
 import os
 from pathlib import Path
 from playwright.sync_api import sync_playwright, expect
@@ -12,17 +12,17 @@ NAME = "张同学 Sam"
 def access(page):
     page.goto(BASE + "/app/", wait_until="domcontentloaded")
     page.locator("#account-form").wait_for(timeout=30000)
-    assert page.locator('input[type="password"]').count() == 0
-    assert page.get_by_role("button", name="Create account", exact=True).count() == 0
+    assert page.locator('input[type="password"]').count() == 1
+    assert page.get_by_role("button", name="Create account", exact=True).count() == 1
 
 def enter(page):
-    page.get_by_label("Your name", exact=True).fill(NAME)
-    page.get_by_role("button", name="Enter InvestOne →", exact=True).click()
+    page.locator('#visitor-form input[name="username"]').fill(NAME)
+    page.get_by_role("button", name="Continue without an account", exact=True).click()
     page.locator("nav .nav-item").first.wait_for(timeout=30000)
     expect(page.locator(".userbox")).to_contain_text(NAME)
 
 with sync_playwright() as pw:
-    browser = pw.chromium.launch(headless=True)
+    browser = pw.chromium.launch(headless=True, executable_path=os.environ.get("PLAYWRIGHT_EXECUTABLE_PATH") or None)
     headers = {"X-Forwarded-Proto": "http"} if BASE.startswith("http:") else {}
     ctx = browser.new_context(viewport={"width": 1365, "height": 950}, extra_http_headers=headers)
     page = ctx.new_page()
@@ -45,7 +45,7 @@ with sync_playwright() as pw:
     enter(page)
     page.get_by_role("link", name="Personalised Intelligence", exact=True).click()
     expect(page.locator('#profile-form select[name="risk"]')).to_have_value("High")
-    print("PASS: Chinese/English name-only entry, no password/registration, refresh, sign-out and saved browser data", flush=True)
+    print("PASS: browser visitor entry, refresh, sign-out and saved browser data", flush=True)
     second = browser.new_context(viewport={"width": 1280, "height": 850}, extra_http_headers=headers)
     other = second.new_page()
     access(other)
@@ -62,4 +62,32 @@ with sync_playwright() as pw:
     expect(small.locator(".account-entry")).to_be_visible()
     assert not errors, "Browser runtime errors occurred"
     print("PASS: mobile name entry and visible sign-out; no browser errors", flush=True)
+    account_ctx = browser.new_context(extra_http_headers=headers)
+    account_page = account_ctx.new_page()
+    access(account_page)
+    import uuid
+    username = "qa-" + uuid.uuid4().hex[:12]
+    account_page.locator('#account-form input[name="username"]').fill(username)
+    account_page.locator('#account-form input[name="password"]').fill("test-password-123")
+    account_page.get_by_role("button", name="Create account", exact=True).click()
+    account_page.locator("nav .nav-item").first.wait_for()
+    account_page.goto(BASE + "/app/#quant")
+    account_page.locator('#quant-form input[name="top_n"]').fill("2")
+    account_page.get_by_role("button", name="Save selection settings", exact=True).click()
+    expect(account_page.locator("#toast")).to_contain_text("Selection settings saved")
+    account_page.reload()
+    expect(account_page.locator('#quant-form input[name="top_n"]')).to_have_value("2")
+    device = browser.new_context(extra_http_headers=headers)
+    device_page = device.new_page()
+    access(device_page)
+    device_page.locator('#account-form input[name="username"]').fill(username)
+    device_page.locator('#account-form input[name="password"]').fill("test-password-123")
+    device_page.get_by_role("button", name="Sign in", exact=True).click()
+    device_page.locator("nav .nav-item").first.wait_for()
+    device_page.goto(BASE + "/app/#quant")
+    expect(device_page.locator('#quant-form input[name="top_n"]')).to_have_value("2")
+    device_page.locator('.account-entry[data-action="logout"]').click()
+    device_page.reload()
+    device_page.locator("#account-form").wait_for()
+    print("PASS: registration, saved strategy, reload, cross-device login and logout", flush=True)
     browser.close()

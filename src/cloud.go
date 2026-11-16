@@ -41,6 +41,7 @@ type cloudServer struct {
 	visits   *visitTracker
 	aiGate   chan struct{}
 	accounts *accountStore
+	members  *memberStore
 }
 
 func newCloudServer(ctx context.Context, root string) (*cloudServer, error) {
@@ -58,7 +59,11 @@ func newCloudServer(ctx context.Context, root string) (*cloudServer, error) {
 	if e != nil {
 		return nil, errors.New("Account storage unavailable")
 	}
-	c := &cloudServer{sessions: map[string]*cloudSession{}, provider: newLiveProvider(), dataDir: root, ctx: ctx, static: http.FileServer(http.FS(sub)), visits: newVisitTracker(root), aiGate: make(chan struct{}, 2), accounts: accounts}
+	members, e := openMembers(root)
+	if e != nil {
+		return nil, errors.New("Member storage unavailable")
+	}
+	c := &cloudServer{members: members, sessions: map[string]*cloudSession{}, provider: newLiveProvider(), dataDir: root, ctx: ctx, static: http.FileServer(http.FS(sub)), visits: newVisitTracker(root), aiGate: make(chan struct{}, 2), accounts: accounts}
 	if key := strings.TrimSpace(os.Getenv("INVESTONE_SHARED_AI_KEY")); key != "" && !keyValid(key) {
 		return nil, errors.New("invalid server-side AI key configuration")
 	}
@@ -91,6 +96,11 @@ func newCloudServer(ctx context.Context, root string) (*cloudServer, error) {
 	for _, user := range accounts.data.Users {
 		if _, err := c.loadAccount(user.Workspace); err != nil {
 			return nil, errors.New("Account workspace unavailable")
+		}
+	}
+	for _, user := range members.data.Users {
+		if _, err := c.loadAccount(user.Workspace); err != nil {
+			return nil, errors.New("Member workspace unavailable")
 		}
 	}
 	return c, nil
@@ -277,7 +287,7 @@ func (c *cloudServer) handler() http.Handler {
 				if user != nil {
 					username = user.Username
 				}
-				send(w, 200, map[string]any{"state": state, "cloud": true, "signed_in": user != nil, "authenticated": false, "username": username, "ai_ready": s.app.getKey() != "", "public_ai": s.app.sharedKey != "", "version": Version, "api_base": APIBase, "mode": "CLOUD_LIVE_BACKEND"})
+				send(w, 200, map[string]any{"state": state, "cloud": true, "signed_in": user != nil, "authenticated": func() bool { _, ok := c.memberIdentity(r); return ok }(), "username": username, "ai_ready": s.app.getKey() != "", "public_ai": s.app.sharedKey != "", "version": Version, "api_base": APIBase, "mode": "CLOUD_LIVE_BACKEND"})
 				return
 			}
 			s.app.api(w, r)
