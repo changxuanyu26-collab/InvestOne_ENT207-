@@ -227,8 +227,11 @@ input::placeholder,textarea::placeholder{color:#555!important;opacity:1!importan
 .topic-list span,.social-topic{display:inline-flex;padding:5px 9px;border-radius:999px;background:#fff;border:1px solid #cfe3d9;font-size:12px;font-weight:700;color:#303a34}
 .social-method{font-size:13px!important;margin:14px 0 0!important;color:#303a34!important}
 .social-feed{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px}
-.social-post{border:1px solid var(--line);border-radius:11px;padding:16px;background:#fff;min-width:0;transition:border-color .18s ease,box-shadow .18s ease}
+.social-post{border:1px solid var(--line);border-radius:13px;background:#fff;min-width:0;overflow:hidden;transition:border-color .18s ease,box-shadow .18s ease}
 .social-post:hover{border-color:#8eddbc;box-shadow:0 5px 16px #10996d14}
+.social-cover{min-height:112px;padding:18px;background:linear-gradient(135deg,#dff8ed,#eef5f2);display:grid;grid-template-columns:auto 1fr;grid-template-rows:1fr auto;gap:4px 12px;align-items:center;color:#163c30}
+.social-cover>span{grid-row:1/3;font-size:34px}.social-cover strong{font-size:18px}.social-cover small{font-size:12px;font-weight:800;color:#345e51}
+.social-post-body{padding:16px}
 .social-post-top{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-bottom:11px}
 .social-tone{display:inline-flex;padding:5px 9px;border-radius:7px;font-size:12px;font-weight:800}
 .social-tone.bullish{background:#dcf8ed;color:#086647}.social-tone.mixed{background:#edf0f2;color:#39454c}.social-tone.bearish{background:#fff0ec;color:#943f31}
@@ -238,4 +241,4 @@ input::placeholder,textarea::placeholder{color:#555!important;opacity:1!importan
 .social-post p{font-size:13px!important;margin:10px 0 0!important;color:#303a34!important}
 .community-lower{align-items:start}
 @media(max-width:900px){.social-feed{grid-template-columns:1fr}.social-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.community-links{margin-left:0;width:100%}}
-@media(max-width:520px){.social-metrics{grid-template-columns:1fr 1fr}.community-toolbar,.community-search{display:grid;width:100%}.community-search label{min-width:0}.community-links{gap:10px}.social-post{padding:14px}}
+@media(max-width:520px){.social-metrics{grid-template-columns:1fr 1fr}.community-toolbar,.community-search{display:grid;width:100%}.community-search label{min-width:0}.community-links{gap:10px}.social-post-body{padding:14px}}
