@@ -31,6 +31,18 @@ func TestCommunitySearchTermsUseCompanyNameAndTicker(t *testing.T) {
 	}
 }
 
+func TestCommunityScopeRelevance(t *testing.T) {
+	if !communityFocusRelevant("NVDA", "Nvidia raises its guidance") || communityFocusRelevant("NVDA", "Microsoft ONNX Runtime disappears") {
+		t.Fatal("selected-company relevance is inaccurate")
+	}
+	if !communityMarketRelevant("Investors debate Fed interest rates and stock valuations") {
+		t.Fatal("market-wide investment topic was rejected")
+	}
+	if communityMarketRelevant("Crew unaware of risks before yacht sank, say investigators") {
+		t.Fatal("unrelated story was accepted through a partial word match")
+	}
+}
+
 type communityErrorProvider struct{ fixtureProvider }
 
 func (p *communityErrorProvider) Community(context.Context, string) ([]Source, error) {

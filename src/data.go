@@ -493,6 +493,35 @@ func communitySearchTerms(s string) []communityQuery {
 	return queries
 }
 
+func communityFocusRelevant(s, title string) bool {
+	lower := strings.ToLower(title)
+	for _, name := range communityAliases[s] {
+		if strings.Contains(lower, strings.ToLower(name)) {
+			return true
+		}
+	}
+	match, _ := regexp.MatchString(`(?i)(^|[^a-z0-9])`+regexp.QuoteMeta(s)+`([^a-z0-9]|$)`, title)
+	return match
+}
+
+func communityMarketRelevant(title string) bool {
+	lower := strings.ToLower(title)
+	phrases := []string{"stock market", "interest rate", "wall street", "venture capital", "private equity"}
+	for _, phrase := range phrases {
+		if strings.Contains(lower, phrase) {
+			return true
+		}
+	}
+	words := []string{"stock", "stocks", "shares", "market", "markets", "invest", "investing", "investor", "investors", "finance", "financial", "earnings", "revenue", "valuation", "economy", "economic", "inflation", "fed", "trading", "trade", "bank", "banks", "fund", "funds", "etf", "bond", "bonds", "bitcoin", "crypto", "startup", "startups", "technology", "ai", "semiconductor", "chip", "chips"}
+	for _, word := range words {
+		match, _ := regexp.MatchString(`(?i)(^|[^a-z0-9])`+regexp.QuoteMeta(word)+`([^a-z0-9]|$)`, title)
+		if match {
+			return true
+		}
+	}
+	return false
+}
+
 func (p *liveProvider) Community(ctx context.Context, s string) ([]Source, error) {
 	s, err := symbol(s)
 	if err != nil {
@@ -528,9 +557,17 @@ func (p *liveProvider) Community(ctx context.Context, s string) ([]Source, error
 		if r.err == nil {
 			succeeded = true
 			if r.scope == "Market-wide" {
-				market = append(market, r.items...)
+				for _, item := range r.items {
+					if communityMarketRelevant(item.Title) {
+						market = append(market, item)
+					}
+				}
 			} else {
-				focus = append(focus, r.items...)
+				for _, item := range r.items {
+					if communityFocusRelevant(s, item.Title) {
+						focus = append(focus, item)
+					}
+				}
 			}
 		}
 	}
