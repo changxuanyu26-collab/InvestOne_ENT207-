@@ -31,6 +31,18 @@ func TestCommunitySearchTermsUseCompanyNameAndTicker(t *testing.T) {
 	}
 }
 
+func TestCommunityTitleRelevance(t *testing.T) {
+	if !communityTitleMatches("NVDA", "Nvidia raises its guidance") {
+		t.Fatal("company-name title was rejected")
+	}
+	if !communityTitleMatches("NVDA", "NVDA valuation discussion") {
+		t.Fatal("ticker title was rejected")
+	}
+	if communityTitleMatches("NVDA", "Microsoft ONNX Runtime has disappeared from GitHub") {
+		t.Fatal("unrelated title was accepted because an author or body matched")
+	}
+}
+
 type communityErrorProvider struct{ fixtureProvider }
 
 func (p *communityErrorProvider) Community(context.Context, string) ([]Source, error) {

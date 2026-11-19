@@ -468,16 +468,29 @@ func parseHackerNewsCommunity(b []byte) ([]Source, error) {
 	return items, nil
 }
 
+var communityAliases = map[string][]string{
+	"AAPL": {"Apple"}, "AMZN": {"Amazon"}, "GOOGL": {"Google", "Alphabet"},
+	"JPM": {"JPMorgan"}, "META": {"Meta"}, "MSFT": {"Microsoft"},
+	"NVDA": {"Nvidia"}, "QQQ": {"Nasdaq 100"}, "SPY": {"S&P 500"},
+	"TSLA": {"Tesla"}, "XOM": {"Exxon", "ExxonMobil"},
+}
+
 func communitySearchTerms(s string) []string {
-	names := map[string]string{
-		"AAPL": "Apple", "AMZN": "Amazon", "GOOGL": "Google", "JPM": "JPMorgan",
-		"META": "Meta", "MSFT": "Microsoft", "NVDA": "Nvidia", "QQQ": "Nasdaq QQQ",
-		"SPY": "S&P 500 ETF", "TSLA": "Tesla", "XOM": "ExxonMobil",
-	}
-	if name := names[s]; name != "" && !strings.EqualFold(name, s) {
-		return []string{name, s}
+	if names := communityAliases[s]; len(names) > 0 {
+		return []string{names[0], s}
 	}
 	return []string{s}
+}
+
+func communityTitleMatches(s, title string) bool {
+	lower := strings.ToLower(title)
+	for _, name := range communityAliases[s] {
+		if strings.Contains(lower, strings.ToLower(name)) {
+			return true
+		}
+	}
+	match, _ := regexp.MatchString(`(?i)(^|[^a-z0-9])`+regexp.QuoteMeta(s)+`([^a-z0-9]|$)`, title)
+	return match
 }
 
 func (p *liveProvider) Community(ctx context.Context, s string) ([]Source, error) {
@@ -520,7 +533,7 @@ func (p *liveProvider) Community(ctx context.Context, s string) ([]Source, error
 	unique := make([]Source, 0, len(combined))
 	for _, item := range combined {
 		key := strings.ToLower(strings.TrimSpace(item.Title))
-		if key == "" || seen[key] {
+		if key == "" || seen[key] || !communityTitleMatches(s, item.Title) {
 			continue
 		}
 		seen[key] = true
