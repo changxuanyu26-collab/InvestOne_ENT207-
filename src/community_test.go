@@ -26,20 +26,8 @@ func TestParseHackerNewsCommunity(t *testing.T) {
 
 func TestCommunitySearchTermsUseCompanyNameAndTicker(t *testing.T) {
 	terms := communitySearchTerms("NVDA")
-	if len(terms) != 2 || terms[0] != "Nvidia" || terms[1] != "NVDA" {
+	if len(terms) != 4 || terms[0].Term != "Nvidia" || terms[0].Scope != "Selected company" || terms[2].Scope != "Market-wide" {
 		t.Fatalf("unexpected terms: %#v", terms)
-	}
-}
-
-func TestCommunityTitleRelevance(t *testing.T) {
-	if !communityTitleMatches("NVDA", "Nvidia raises its guidance") {
-		t.Fatal("company-name title was rejected")
-	}
-	if !communityTitleMatches("NVDA", "NVDA valuation discussion") {
-		t.Fatal("ticker title was rejected")
-	}
-	if communityTitleMatches("NVDA", "Microsoft ONNX Runtime has disappeared from GitHub") {
-		t.Fatal("unrelated title was accepted because an author or body matched")
 	}
 }
 

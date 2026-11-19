@@ -475,22 +475,22 @@ var communityAliases = map[string][]string{
 	"TSLA": {"Tesla"}, "XOM": {"Exxon", "ExxonMobil"},
 }
 
-func communitySearchTerms(s string) []string {
-	if names := communityAliases[s]; len(names) > 0 {
-		return []string{names[0], s}
-	}
-	return []string{s}
+type communityQuery struct {
+	Term  string
+	Scope string
 }
 
-func communityTitleMatches(s, title string) bool {
-	lower := strings.ToLower(title)
-	for _, name := range communityAliases[s] {
-		if strings.Contains(lower, strings.ToLower(name)) {
-			return true
-		}
+func communitySearchTerms(s string) []communityQuery {
+	queries := []communityQuery{}
+	if names := communityAliases[s]; len(names) > 0 {
+		queries = append(queries, communityQuery{Term: names[0], Scope: "Selected company"})
 	}
-	match, _ := regexp.MatchString(`(?i)(^|[^a-z0-9])`+regexp.QuoteMeta(s)+`([^a-z0-9]|$)`, title)
-	return match
+	queries = append(queries,
+		communityQuery{Term: s, Scope: "Selected company"},
+		communityQuery{Term: "stock market", Scope: "Market-wide"},
+		communityQuery{Term: "investing", Scope: "Market-wide"},
+	)
+	return queries
 }
 
 func (p *liveProvider) Community(ctx context.Context, s string) ([]Source, error) {
@@ -501,47 +501,66 @@ func (p *liveProvider) Community(ctx context.Context, s string) ([]Source, error
 	type result struct {
 		items []Source
 		err   error
+		scope string
 	}
-	terms := communitySearchTerms(s)
-	results := make(chan result, len(terms))
-	for _, term := range terms {
-		term := term
+	queries := communitySearchTerms(s)
+	results := make(chan result, len(queries))
+	for _, query := range queries {
+		query := query
 		go func() {
-			u := "https://hn.algolia.com/api/v1/search_by_date?tags=story&hitsPerPage=18&query=" + url.QueryEscape(term)
+			u := "https://hn.algolia.com/api/v1/search_by_date?tags=story&hitsPerPage=18&query=" + url.QueryEscape(query.Term)
 			b, e := p.fetch(ctx, u, "InvestOne/2.1 community-research", 15*time.Minute)
 			if e != nil {
-				results <- result{err: e}
+				results <- result{err: e, scope: query.Scope}
 				return
 			}
 			items, e := parseHackerNewsCommunity(b)
-			results <- result{items: items, err: e}
+			for i := range items {
+				items[i].Publisher = strings.Replace(items[i].Publisher, "Hacker News ·", "Hacker News · "+query.Scope+" ·", 1)
+			}
+			results <- result{items: items, err: e, scope: query.Scope}
 		}()
 	}
-	combined := []Source{}
+	focus, market := []Source{}, []Source{}
 	succeeded := false
-	for range terms {
+	for range queries {
 		r := <-results
 		if r.err == nil {
 			succeeded = true
-			combined = append(combined, r.items...)
+			if r.scope == "Market-wide" {
+				market = append(market, r.items...)
+			} else {
+				focus = append(focus, r.items...)
+			}
 		}
 	}
 	if !succeeded {
 		return nil, errors.New("Public discussion sources are temporarily unavailable")
 	}
 	seen := map[string]bool{}
-	unique := make([]Source, 0, len(combined))
-	for _, item := range combined {
-		key := strings.ToLower(strings.TrimSpace(item.Title))
-		if key == "" || seen[key] || !communityTitleMatches(s, item.Title) {
-			continue
+	dedupe := func(items []Source) []Source {
+		unique := make([]Source, 0, len(items))
+		for _, item := range items {
+			key := strings.ToLower(strings.TrimSpace(item.Title))
+			if key == "" || seen[key] {
+				continue
+			}
+			seen[key] = true
+			unique = append(unique, item)
 		}
-		seen[key] = true
-		unique = append(unique, item)
+		sort.SliceStable(unique, func(i, j int) bool { return unique[i].Date > unique[j].Date })
+		return unique
 	}
-	sort.SliceStable(unique, func(i, j int) bool { return unique[i].Date > unique[j].Date })
-	if len(unique) > 24 {
-		unique = unique[:24]
+	focus = dedupe(focus)
+	market = dedupe(market)
+	unique := make([]Source, 0, 24)
+	for i := 0; len(unique) < 24 && (i < len(focus) || i < len(market)); i++ {
+		if i < len(focus) {
+			unique = append(unique, focus[i])
+		}
+		if i < len(market) && len(unique) < 24 {
+			unique = append(unique, market[i])
+		}
 	}
 	return unique, nil
 }
