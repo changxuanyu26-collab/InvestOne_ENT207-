@@ -12,9 +12,11 @@
 | `NVDA` historical prices | Yahoo Finance public chart API | PASS; 22 daily bars; returned quote 177.92 USD, quote timestamp `2026-11-09T17:30:58Z` |
 | `600519.SS` A-share prices | Yahoo Finance public chart API | PASS; 21 daily bars; returned quote 1444.99 CNY, quote timestamp `2026-11-09T07:00:02Z` |
 | `NVDA` financial news | Yahoo Finance RSS | PASS; 17 items and a source-date/URL |
-| Public investor discussions | Reddit RSS | PASS; 17 items |
+| Public investor discussions (historical provider) | Reddit RSS | PASS; 17 items |
 
 These are historical **test-observed** reference prices, not current quotes. The purpose of keeping this record is to demonstrate that the live connection returned actual source-attributed information. It is not a recurring dataset distributed by the repository.
+
+**Current provider note:** the application now retrieves public discussions through Hacker News Algolia and links each result to its original Hacker News thread. The Reddit result above is retained only as an accurate record of the Nov 9, 2026 test run.
 
 ### What is not yet verified
 

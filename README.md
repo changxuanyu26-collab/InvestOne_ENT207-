@@ -51,7 +51,7 @@ The six files are published by [GitHub Pages automated build](.github/workflows/
 
 The landing page leads to the real Go backend hosted on Railway, not to the old simulated preview. Visitors can access provider-backed financial data without registration. Register or sign in to sync your settings across devices, or enter a display name under “Continue without an account” for temporary access. English and Chinese names are supported. Names are display labels, and guest work is isolated by page, so identical names do not share data. Guest changes reset on browser refresh, reopening, and re-entry; changing sections within the current page retains them. Previously stored visitor files are preserved separately. The shared course AI connection requires no API key entry.
 
-The five connected features are real AI Investment Chatbot (server-managed shared course key), Personalised Intelligence (saved user context), Continuous Automation (server-side rules), Community Integration (real public RSS where available), and Investor Digital Humans (educational Buffett/Munger/Graham AI frameworks, stylized avatars and browser speech synthesis). The last feature is not a clone of any actual investor.
+The five connected features are real AI Investment Chatbot (server-managed shared course key), Personalised Intelligence (saved user context), Continuous Automation (server-side rules), Community Integration (real public discussions with source links and engagement signals), and Investor Digital Humans (educational Buffett/Munger/Graham AI frameworks, stylized avatars and browser speech synthesis). The last feature is not a clone of any actual investor.
 
 **Cloud verification:** `scripts/cloud_live_smoke.py` checks visitor isolation, provider-backed quotes, news and monitoring. `scripts/cloud_browser_smoke.py` checks the live desktop/mobile UI. `scripts/auth_browser_smoke.py` checks name-only entry, browser isolation, guest reset, optional account saving, cross-device restoration and sign-out without making paid AI requests.
 
@@ -81,7 +81,7 @@ In **Investor Digital Humans**, selecting Buffett-, Munger- or Graham-inspired a
 
 **Continuous Monitoring & Automation** evaluates user rules and prepares alerts or refreshed analysis while the Mac service is running and awake.
 
-**Forum & Community Integration** distinguishes unverified public discussion from dated financial sources, and supports saved evidence-backed opinions. Access depends on the external forum.
+**Forum & Community Integration** summarises recent public Hacker News discussions by tone and topic, shows points and comment counts, links every item to its original thread, and supports saved evidence-backed opinions. Public discussion remains separate from dated financial evidence.
 
 **Investor Digital Humans** offers Buffett-, Munger- and Graham-inspired *educational analysis frameworks* using publicly documented concepts and the LLM. Not an endorsement, a real-person clone, or financial advice.
 
@@ -97,10 +97,10 @@ The Go source under `src/` uses actual HTTPS provider responses and records prov
 | China A-share daily bars | Yahoo chart 1/2 → Tencent public daily-K | Third-party public endpoints; adjustments differ |
 | Financial news | Yahoo Finance RSS → Google News RSS | Headline/snippet results; source dates are shown |
 | SEC company filings and financial facts | SEC EDGAR submissions / XBRL companyfacts | Requires a **real SEC contact email**, entered in local Settings |
-| Community discussion | Public Reddit RSS | Unavailable if blocked or restricted; local evidence saving remains usable |
+| Community discussion | Hacker News Algolia search + original Hacker News threads | Public discussion is not representative market sentiment; saved sourced opinions remain usable if the live feed is unavailable |
 | AI analysis | ENT207 DeepSeek OpenAI-compatible API | Shared server key on the public site; user-supplied key in the desktop edition |
 
-**Independent evidence:** The [GitHub live-provider test run](https://github.com/changxuanyu26-collab/InvestOne_ENT207-/actions/runs/42665287680) successfully fetched actual SPY, NVDA and 600519.SS chart data, NVDA news and Reddit public posts on Nov 9, 2026 (UTC). The SEC and paid ENT207 DeepSeek calls were **not tested** in that run: no legitimate SEC contact email or user-paid AI key was supplied. Third-party availability may change; run the app's data-connection diagnostics on your Mac.
+**Independent evidence:** The [GitHub live-provider test run](https://github.com/changxuanyu26-collab/InvestOne_ENT207-/actions/runs/42665287680) successfully fetched actual SPY, NVDA and 600519.SS chart data, NVDA news and Reddit public posts on Nov 9, 2026 (UTC). Reddit was subsequently replaced by the Hacker News Algolia search path after its public endpoint became unreliable. The SEC and paid ENT207 DeepSeek calls were **not tested** in that run: no legitimate SEC contact email or user-paid AI key was supplied. Third-party availability may change; run the app's data-connection diagnostics on your Mac.
 
 See [detailed desktop setup and data-provider guide](docs/DESKTOP_GUIDE.md).
 

@@ -76,7 +76,7 @@ func newLiveProvider() *liveProvider {
 		if r.URL.Scheme != "https" {
 			return errors.New("Non-HTTPS redirects are blocked")
 		}
-		allowed := map[string]bool{"query1.finance.yahoo.com": true, "query2.finance.yahoo.com": true, "feeds.finance.yahoo.com": true, "finance.yahoo.com": true, "news.google.com": true, "www.reddit.com": true, "www.sec.gov": true, "data.sec.gov": true, "stooq.com": true, "web.ifzq.gtimg.cn": true}
+		allowed := map[string]bool{"query1.finance.yahoo.com": true, "query2.finance.yahoo.com": true, "feeds.finance.yahoo.com": true, "finance.yahoo.com": true, "news.google.com": true, "hn.algolia.com": true, "news.ycombinator.com": true, "www.sec.gov": true, "data.sec.gov": true, "stooq.com": true, "web.ifzq.gtimg.cn": true}
 		if !allowed[r.URL.Hostname()] {
 			return errors.New("Redirect host is not approved")
 		}
@@ -363,6 +363,7 @@ func (p *liveProvider) News(ctx context.Context, s string) ([]Source, error) {
 	}
 	return nil, errors.New(strings.Join(errs, " | "))
 }
+
 // SearchNews retrieves question-specific public reports. It uses the user's
 // words as a search query and returns source links and RSS excerpts only; the
 // model does not receive an invented article body.
@@ -429,17 +430,107 @@ func (p *liveProvider) SearchNews(ctx context.Context, question string) ([]Sourc
 	sort.SliceStable(items, func(i, j int) bool { return newsRank(items[i].Publisher) < newsRank(items[j].Publisher) })
 	return items, nil
 }
+
+type hackerNewsSearch struct {
+	Hits []struct {
+		Author      string `json:"author"`
+		CreatedAt   string `json:"created_at"`
+		NumComments int    `json:"num_comments"`
+		ObjectID    string `json:"objectID"`
+		Points      int    `json:"points"`
+		Title       string `json:"title"`
+		URL         string `json:"url"`
+	} `json:"hits"`
+}
+
+func parseHackerNewsCommunity(b []byte) ([]Source, error) {
+	var feed hackerNewsSearch
+	if err := json.Unmarshal(b, &feed); err != nil {
+		return nil, errors.New("Unable to read public discussion data")
+	}
+	items := make([]Source, 0, len(feed.Hits))
+	for _, hit := range feed.Hits {
+		title := strings.TrimSpace(html.UnescapeString(hit.Title))
+		if title == "" || hit.ObjectID == "" {
+			continue
+		}
+		threadURL := "https://news.ycombinator.com/item?id=" + url.QueryEscape(hit.ObjectID)
+		publisher := fmt.Sprintf("Hacker News · %d points · %d comments", hit.Points, hit.NumComments)
+		text := "Public discussion"
+		if hit.Author != "" {
+			text += " posted by " + hit.Author
+		}
+		if u, err := url.Parse(hit.URL); err == nil && u.Hostname() != "" {
+			text += " · linked source: " + u.Hostname()
+		}
+		items = append(items, Source{Title: title, URL: threadURL, Publisher: publisher, Date: hit.CreatedAt, Text: text, Kind: "opinion"})
+	}
+	return items, nil
+}
+
+func communitySearchTerms(s string) []string {
+	names := map[string]string{
+		"AAPL": "Apple", "AMZN": "Amazon", "GOOGL": "Google", "JPM": "JPMorgan",
+		"META": "Meta", "MSFT": "Microsoft", "NVDA": "Nvidia", "QQQ": "Nasdaq QQQ",
+		"SPY": "S&P 500 ETF", "TSLA": "Tesla", "XOM": "ExxonMobil",
+	}
+	if name := names[s]; name != "" && !strings.EqualFold(name, s) {
+		return []string{name, s}
+	}
+	return []string{s}
+}
+
 func (p *liveProvider) Community(ctx context.Context, s string) ([]Source, error) {
-	s, e := symbol(s)
-	if e != nil {
-		return nil, e
+	s, err := symbol(s)
+	if err != nil {
+		return nil, err
 	}
-	u := "https://www.reddit.com/r/stocks/search.rss?q=" + url.QueryEscape(s) + "&restrict_sr=on&sort=new&t=month"
-	b, e := p.fetch(ctx, u, "InvestOne/1.1 personal-research", 30*time.Minute)
-	if e != nil {
-		return nil, e
+	type result struct {
+		items []Source
+		err   error
 	}
-	return parseFeed(b, "opinion", "Reddit / r/stocks")
+	terms := communitySearchTerms(s)
+	results := make(chan result, len(terms))
+	for _, term := range terms {
+		term := term
+		go func() {
+			u := "https://hn.algolia.com/api/v1/search_by_date?tags=story&hitsPerPage=18&query=" + url.QueryEscape(term)
+			b, e := p.fetch(ctx, u, "InvestOne/2.1 community-research", 15*time.Minute)
+			if e != nil {
+				results <- result{err: e}
+				return
+			}
+			items, e := parseHackerNewsCommunity(b)
+			results <- result{items: items, err: e}
+		}()
+	}
+	combined := []Source{}
+	succeeded := false
+	for range terms {
+		r := <-results
+		if r.err == nil {
+			succeeded = true
+			combined = append(combined, r.items...)
+		}
+	}
+	if !succeeded {
+		return nil, errors.New("Public discussion sources are temporarily unavailable")
+	}
+	seen := map[string]bool{}
+	unique := make([]Source, 0, len(combined))
+	for _, item := range combined {
+		key := strings.ToLower(strings.TrimSpace(item.Title))
+		if key == "" || seen[key] {
+			continue
+		}
+		seen[key] = true
+		unique = append(unique, item)
+	}
+	sort.SliceStable(unique, func(i, j int) bool { return unique[i].Date > unique[j].Date })
+	if len(unique) > 24 {
+		unique = unique[:24]
+	}
+	return unique, nil
 }
 func validEmail(s string) bool {
 	return len(s) < 254 && regexp.MustCompile(`^[^\s@]+@[^\s@]+\.[^\s@]+$`).MatchString(s)
