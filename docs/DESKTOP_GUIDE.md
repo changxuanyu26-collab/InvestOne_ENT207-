@@ -21,7 +21,7 @@ If macOS flags the unsigned app as untrusted, only approve it if you obtained th
 - **AI Investment Chatbot:** OpenAI-compatible ENT207 DeepSeek Chat Completions, documented fact/news/portfolio context, citations to acquired source IDs and persisted history.
 - **Personalised Intelligence:** locally stored profile, watchlist, investment horizon and research preferences; paper portfolio context.
 - **Continuous Monitoring:** configured price/earnings/news/periodic rules, checks and notifications while the desktop service stays awake.
-- **Community Integration:** Reddit RSS where publicly accessible, saved opinions, source/author labels; availability is provider-dependent.
+- **Community Integration:** recent Hacker News discussions, social-pulse summaries, engagement counts, original thread links and saved sourced opinions; availability is provider-dependent.
 - **Investor Digital Humans:** educational Buffett, Munger and Graham analytical framing using the same AI API; not a voice/avatar clone or endorsed by actual investors.
 
 Professional tools — market research, SEC fact inspection, document library, monthly multi-factor portfolio backtesting, portfolio metrics and paper trading — are accessible inside the app.
@@ -35,7 +35,7 @@ Professional tools — market research, SEC fact inspection, document library, m
 | Financial news | Yahoo RSS | Google News RSS | Headline and snippet aggregation, not necessarily complete articles |
 | Official US filings | SEC EDGAR | Requires your real contact email | SEC may rate-limit or restrict access |
 | SEC financial facts | SEC companyfacts XBRL | Requires your real contact email | Report period and filing date must be respected |
-| Public investment forums | Reddit RSS | User-saved sourced opinion | May be blocked or empty; not a comprehensive market sentiment service |
+| Public investment forums | Hacker News Algolia search | User-saved sourced opinion | Public discussion is not representative market sentiment and may be unavailable |
 
 **Data provenance:** prices carry source, reference date/time, retrieved time, adjustment flag, and source URL. Stooq/Tencent daily `AsOf` values are day references, not exact trade times. Real-time quote quality depends on source permissions and availability.
 

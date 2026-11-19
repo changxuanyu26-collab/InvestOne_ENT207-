@@ -286,7 +286,9 @@ func (a *App) api(w http.ResponseWriter, r *http.Request) {
 		items, e := a.provider.Community(r.Context(), sym)
 		msg := ""
 		if e != nil {
-			msg = e.Error()
+			// External community platforms frequently rate-limit or change public
+			// endpoints. Do not expose raw upstream HTTP errors in the product UI.
+			msg = "Live public discussions are temporarily unavailable. Saved opinions and direct community links are still available."
 		}
 		if items == nil {
 			items = []Source{}

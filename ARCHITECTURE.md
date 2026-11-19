@@ -9,7 +9,7 @@ Browser UI (local)
      -> Private on-disk JSON store: profile, watchlist, simulated trades, chat, documents, rules
      -> Market provider adapters: Yahoo Finance, fallback daily-price services
      -> SEC filings and financial fact retrieval where supported
-     -> News RSS and public community feed retrieval where available
+     -> News RSS and Hacker News public discussion retrieval where available
      -> Quant Lab: monthly multi-factor strategy, execution lag and fees
      -> AI: ENT207 DeepSeek OpenAI-compatible Chat Completions
      -> Background monitoring while the application is running
